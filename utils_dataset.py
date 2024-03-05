@@ -123,7 +123,8 @@ class DatasetNumpy(torch.utils.data.Dataset):
         self.output = np.array(self.labels, dtype=np.uint8)
 
         self.load_spikes()
-        self.reduce_inp_dimensions(target_dim=target_dim, axis=2, nb_rep=nb_rep)
+        if self.nb_units != 700:
+            self.reduce_inp_dimensions(target_dim=target_dim, axis=2, nb_rep=nb_rep)
 
         if truncation and verbose:
             self.input = self.input[:, :150,:]
@@ -133,11 +134,11 @@ class DatasetNumpy(torch.utils.data.Dataset):
             print(f'TRUNCATION: OFF')
 
         if pert_proba != None:
-          perturbation = jax.random.bernoulli(subkey_perturbation, p=pert_proba, shape=self.input.shape)
-          perturbation = jnp.logical_or(self.input, perturbation).astype(jnp.uint8)
-          self.input = jnp.concatenate([self.input, perturbation], axis=0, dtype=jnp.uint8)
-          self.output = jnp.tile(self.output, reps=2)
-          if verbose: print(f'self.input after perturbation: {self.input.shape} (DatasetNumpyModified.__init__)')
+            perturbation = jax.random.bernoulli(subkey_perturbation, p=pert_proba, shape=self.input.shape)
+            perturbation = jnp.logical_or(self.input, perturbation).astype(jnp.uint8)
+            self.input = jnp.concatenate([self.input, perturbation], axis=0, dtype=jnp.uint8)
+            self.output = jnp.tile(self.output, reps=2)
+            if verbose: print(f'self.input after perturbation: {self.input.shape} (DatasetNumpyModified.__init__)')
         self.num_samples = self.input.shape[0]
 
     def __len__(self):
