@@ -17,6 +17,9 @@ from six.moves.urllib.error import HTTPError
 from six.moves.urllib.error import URLError
 from six.moves.urllib.request import urlretrieve
 
+from utils_initialization import SimArgs
+args = SimArgs()
+
 def get_audio_dataset(cache_dir, cache_subdir, dataset_name):
     # The remote directory with the data files
     base_url = "https://zenkelab.org/datasets"

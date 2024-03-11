@@ -1,15 +1,21 @@
 import jax
+import numpy as np
 import jax.numpy as jnp
 
-class SimArgs:
-    def __init__(self):
+class SimArgs:    
+    def __init__(self, n_in = 700, n_hid = 128, n_layers = 3, 
+                 seed=14, normalizer='batch', decoder='cum', 
+                 train_tau=True, hierarchy_tau=False, distrib_tau=True,
+                 distrib_tau_sd=0.2, tau_mem=0.2, delta_tau=0.1,
+                 noise_sd=0.1, n_epochs=20, l2_lambda=0, 
+                 freq_lambda=0, dropout=0.1, recurrent=False, verbose=True ):
         # archi
-        self.n_in = 700
+        self.n_in = n_in
         self.n_out = 20
-        self.n_layers = 3
-        self.n_hid = 128
+        self.n_layers = n_layers
+        self.n_hid = n_hid
         # weight
-        self.w_scale = 0.3
+        self.w_scale = [1/np.sqrt(  float(self.n_in)  )] + [1/np.sqrt( float(self.n_hid) )]*self.n_layers
         self.pos_w = False # use only positive weights at initizialization
         self.noise_sd = 0 # [0.05, 0.1, 0.15, 0.2]
         # data
@@ -22,33 +28,36 @@ class SimArgs:
         # neuron model
         self.tau_start = 4*self.timestep # second
         self.tau_end   = self.time_max/4 # second
-        self.tau_mem = 40e-3
-        self.tau_out = 1e-3
-        self.recurrent = False
-        self.distrib_tau = True
+        self.tau_mem = tau_mem
+        self.tau_out = 0.2
+        self.delta_tau = delta_tau
+        self.recurrent = recurrent
+        self.distrib_tau = distrib_tau
         self.distrib_tau_bittar = False
-        self.distrib_tau_sd = 0.6
-        self.hierarchy_tau = True
-        self.train_alpha = True
-        self.normalizer = 'layer'
-        self.norm_bias_init = 0.2
+        self.distrib_tau_sd = distrib_tau_sd
+        self.hierarchy_tau = hierarchy_tau
+        self.train_alpha = train_tau
+        self.normalizer = normalizer
+        self.norm_bias_init = 0.0
         self.v_rest = 0 
         self.v_thr = 1
         self.v_reset = 0
         self.surrogate_fn = 'box'
+        self.decoder = decoder
         # training
         self.lr = 0.01
-        self.nb_epochs = 5
+        self.n_epochs = n_epochs
         self.grad_clip = 1000
         self.batch_size = 128
-        self.seed = 42
+        self.seed = seed
         self.lr_config = 2 
         self.lr_decay = 0.5
         self.lr_decay_every = 25
-        self.l2_lambda = 1e-5
-        self.freq_lambda = 1e-7
+        self.l2_lambda = l2_lambda
+        self.freq_lambda = freq_lambda
         self.target_fr = 12.
-        self.dropout_rate = 0.1
+        self.dropout_rate = dropout
+        self.verbose = verbose
 args = SimArgs()
 
 # function that initializes the hyperparameters of the network

@@ -148,11 +148,11 @@ def hsnn( args_in, input_spikes ):
             I_in = norm( I_in.reshape( b*t, n ), bias = bias, scale = scale )
             I_in = I_in.reshape( b,t,n ) # normalized input current
         # Forward pass of the Layer
-        args_in = [net_params[l], net_states[l]]
+        args_in_layer = [net_params[l], net_states[l]]
         if l+1 == n_layers:
-            _, out_spikes_layer = vscan_layer_out( args_in, I_in )
+            _, out_spikes_layer = vscan_layer_out( args_in_layer, I_in )
         else: 
-            _, out_spikes_layer = vscan_layer( args_in, I_in )
+            _, out_spikes_layer = vscan_layer( args_in_layer, I_in )
             # Dropout
             key, key_dropout = jax.random.split(key, 2)
             out_spikes_layer = dropout( key_dropout, out_spikes_layer, rate=dropout_rate, deterministic=False )

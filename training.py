@@ -50,11 +50,11 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
         # cross entropy loss
         loss_ce = -jnp.mean( jnp.sum(Y * jnp.log(Yhat+1e-12), axis=-1) )
         # L2 norm
-        loss_l2 = optimizers.l2_norm( net_params ) * args.l2_lambda
+        loss_l2 = optimizers.l2_norm( [net_params[l][0] for l in range(len(net_params))] ) * args.l2_lambda
         # firing rate loss
         avg_spikes_neuron = jnp.mean( jnp.stack( [ jnp.mean( jnp.sum( out_spike_net[l], axis=1 ), axis=(0,-1) ) for l in range( len(net_params)-1 )] ) )
         loss_fr = args.freq_lambda * (args.target_fr - avg_spikes_neuron)**2
-        ################# ----> Do I need the spiking frequency regularizer?
+        # Total loss
         loss_total = loss_ce + loss_l2 + loss_fr
         loss_values = [num_correct, loss_ce]
         return loss_total, loss_values
@@ -81,7 +81,7 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
 
     def total_correct(net_params, net_states, X, Y):
         args_in = [net_params, net_states, key, 0.]
-        output_layer, out_spike_net = hsnn( args_in, X )
+        output_layer, _ = hsnn( args_in, X )
         Yhat = decoder( output_layer )
         # Yhat = jax.nn.softmax( net_states_hist[-1][3][:,-1] )
         acc = jnp.sum(jnp.equal(jnp.argmax(Yhat, 1), Y))
@@ -115,14 +115,15 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
             _, net_states = param_initializer(key=key_epoch, args=args)
             grads, opt_state, (L, [tot_correct, _]) = update(key, epoch, net_states, x, y, opt_state, dropout_rate=args.dropout_rate)
             # possibly remove gradient from alpha
-            if not args.train_alpha: 
+            if not args.train_alpha:
                 for g in range(len(grads)): grads[g][1] *= 0
             # weight update
             opt_state = opt_update(epoch, grads, opt_state)
             net_params = get_params(opt_state)
             # clip alpha between 0 and 1
-            if args.train_alpha:
-                for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], jnp.exp(-1/5), jnp.exp(-1/25))
+            # if args.train_alpha:
+            #     # for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], jnp.exp(-1/5), jnp.exp(-1/25))
+            #     for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], 0, 1.0-1e-5)
             # append stats
             train_loss.append(L)
             train_step += 1
