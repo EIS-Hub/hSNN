@@ -27,6 +27,7 @@ class SimArgs:
         self.recurrent = False
         self.distrib_tau = True
         self.distrib_tau_bittar = False
+        self.distrib_tau_sd = 0.6
         self.hierarchy_tau = True
         self.train_alpha = True
         self.normalizer = 'layer'
@@ -75,12 +76,15 @@ def params_initializer( key, args ):
             else: tau_layer = args.tau_mem
             if args.distrib_tau:
                 # tau_l = jax.random.uniform(key_hid[l], [args.n_hid], minval=np.exp(-1/5), maxval=np.exp(-1/25)  )
-                # tau_l = jax.random.uniform(key_hid[l], [args.n_hid], minval=0.5*tau_layer, maxval=1.5*tau_layer  )
-                tau_l = jax.random.normal(key_hid[l], [args.n_hid]) * 0.1 * tau_layer + tau_layer
-                if args.distrib_tau_bittar: tau_l = jax.random.uniform(key_hid[l], [args.n_hid], minval=jnp.exp(-1/5), maxval=jnp.exp(-1/25)  )
+                tau_l = jax.random.uniform(key_hid[l], [args.n_hid], minval=tau_layer*(1-args.distrib_tau_sd), maxval=tau_layer*(1+args.distrib_tau_sd)  )
+                # tau_l = jax.random.normal(key_hid[l], [args.n_hid]) * args.distrib_tau_sd * tau_layer + tau_layer
+                tau_l = jnp.clip( tau_l, 0.005, 10 ) # clipping to avoid too short/long time constant
+                if args.distrib_tau_bittar: tau_l = jax.random.uniform(key_hid[l], [args.n_hid], minval=args.timestep*5, maxval=args.timestep*25  )
             else:
                 tau_l = tau_layer
             alpha_l = jnp.exp(-args.timestep/tau_l)
+            # alpha_l = jax.random.normal( key_hid[l], [args.n_hid] ) * jnp.exp( -args.timestep/tau_layer ) * args.distrib_tau_sd + jnp.exp( -args.timestep/tau_layer )
+            alpha_l = jnp.clip( alpha_l, 0.5, 0.99 )
 
         # initializing the hidden weights with a normal distribution
         if not args.recurrent: w_scale_ff = w_scale[l]
@@ -100,8 +104,10 @@ def params_initializer( key, args ):
             weight_l = [weight_l, scale_norm, bias_norm]
 
         # the initialization of the membrane voltage
-        v_mems = jnp.zeros( (n_post) )
-        out_spikes = jnp.zeros( (n_post) )
+        v_mems = jnp.zeros( (n_post) ) #jax.random.uniform(key_hid[l], [n_post], minval=0., maxval=0.25 ) #jnp.zeros( (n_post) )
+        if l == args.n_layers -1:
+            out_spikes = jnp.zeros( (n_post) ) #jax.random.uniform(key_hid[l], [n_post], minval=0., maxval=0.99 ) #jnp.zeros( (n_post) )
+        else: out_spikes = jnp.zeros( (n_post) ) # jax.random.uniform(key_hid[l], [n_post], minval=0., maxval=0. )
 
         # building the parameters for each layer
         net_params.append( [weight_l, alpha_l] )

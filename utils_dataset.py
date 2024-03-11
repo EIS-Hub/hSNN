@@ -123,7 +123,7 @@ class DatasetNumpy(torch.utils.data.Dataset):
         self.output = np.array(self.labels, dtype=np.uint8)
 
         self.load_spikes()
-        if self.nb_units != 700:
+        if target_dim != 700:
             self.reduce_inp_dimensions(target_dim=target_dim, axis=2, nb_rep=nb_rep)
 
         if truncation and verbose:
@@ -153,7 +153,18 @@ class DatasetNumpy(torch.utils.data.Dataset):
         for idx in range(self.num_samples):
             times = np.digitize(self.firing_times[idx], self.time_bins)
             units = self.units_fired[idx]
-            self.input[idx, times, units] = 1
+            # self.input[idx, times, units] = 1
+
+            x_idx = torch.LongTensor(np.array([times, units])).to('cpu')
+            x_val = torch.FloatTensor(np.ones(len(times))).to('cpu') # torch.sparse_coo_tensor(indices, values, shape, dtype=, device=)
+            x_size = torch.Size([self.nb_steps, self.nb_units])
+
+            x = torch.sparse_coo_tensor(x_idx, x_val, x_size).to('cpu')
+            # y = self.labels[idx]
+
+            self.input[idx] = x.to_dense()
+            # return x.to_dense(), y
+
 
     def reduce_inp_dimensions(self, target_dim, axis, nb_rep):
         sample_ind = int(np.ceil(self.nb_units / target_dim))
