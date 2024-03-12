@@ -66,7 +66,7 @@ def lif_step( args_in, input_spikes ):
 
 
 # Leaky Integrate and Fire layer, Recurrent
-def rlif_step( args_in, input_spikes):
+def rlif_step( args_in, input_spikes ):
     ''' Forward function for the Leaky-Integrate and Fire neuron layer, adopted here for the hidden layers. '''
     net_params, net_states = args_in
     # state: the parameters (weights) and the state of the neurons (spikes, inputs and membrane, ecc..)
@@ -101,12 +101,15 @@ def li_step(args_in, input_spikes):
     
     return [ [w, alpha], [w_mask, tau, V_mem, out_spikes, v_thr, noise_sd] ], V_mem
 
-# parallelizing the Single Layer
+# selecting the correct layer to parallelize
 if args.recurrent: 
     layer = rlif_step
 else:
     layer = lif_step
-layer_out = li_step
+if args.decoder == 'freq':
+    layer_out = lif_step
+else: 
+    layer_out = li_step
 if args.normalizer == 'batch': norm = BatchNorm
 elif args.normalizer == 'layer': norm = LayerNorm
 else: norm = None
@@ -290,8 +293,6 @@ def decoder_cum( out_v_mem ):
     return jax.nn.softmax( jnp.sum( jax.nn.softmax( out_v_mem, axis=-1 ), axis=1), axis=-1 )
     # return jnp.sum( jax.nn.softmax( out_v_mem, axis=-1 ), axis=1)
 
-# def decoder_vmax( out_v_mem ):
-#     return jax.nn.softmax( jnp.max( out_v_mem[:,10:], axis=1 ), axis=-1 )
 def decoder_vmax( out_v_mem ):
     ''' Decodes the output as the maximum of the membrane voltage over time '''
     # out_v_mem dims: [batch, time_steps, out_dim]
@@ -301,3 +302,8 @@ def decoder_vlast( out_v_mem ):
     ''' Decodes the output as the last value of the membrane voltage over time '''
     # out_v_mem dims: [batch, time_steps, out_dim]
     return jax.nn.softmax( out_v_mem[:,-1], axis=-1 )
+
+def decoder_freq( out_v_mem ):
+    ''' Decodes the output as the Frequency of the output neurons over time '''
+    # out_v_mem dims: [batch, time_steps, out_dim]
+    return jax.nn.softmax( jnp.sum( out_v_mem, axis=1 ), axis=-1 )

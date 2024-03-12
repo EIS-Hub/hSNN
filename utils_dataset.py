@@ -13,9 +13,9 @@ import urllib.request
 import gzip, shutil
 import hashlib
 import h5py
-from six.moves.urllib.error import HTTPError
-from six.moves.urllib.error import URLError
-from six.moves.urllib.request import urlretrieve
+# from six.moves.urllib.error import HTTPError
+# from six.moves.urllib.error import URLError
+# from six.moves.urllib.request import urlretrieve
 
 from utils_initialization import SimArgs
 args = SimArgs()

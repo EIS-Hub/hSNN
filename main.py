@@ -48,18 +48,20 @@ if __name__ == '__main__':
     train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate = get_dataloader( args=args, verbose=True )
 
     # Adjusting the parameter selection
-    if args.normalizer == 'batch': norm = BatchNorm
-    elif args.normalizer == 'layer': norm = LayerNorm
-    else: norm = None
-    # network architecture
-    if args.recurrent:
-        layer = rlif_step
-    else: 
-        layer = lif_step
-    layer_out = li_step
+    # if args.normalizer == 'batch': norm = BatchNorm
+    # elif args.normalizer == 'layer': norm = LayerNorm
+    # else: norm = None
+    # # network architecture
+    # if args.recurrent:
+    #     layer = rlif_step
+    # else: 
+    #     layer = lif_step
+    # if args.decoder == 'freq':
+    #     layer_out = lif_step
+    # else: 
+    #     layer_out = li_step
 
     print('\nTraining')
     train_loss, test_acc_shd, val_acc_shd, net_params_trained = train_hsnn(key = jax.random.PRNGKey(args.seed), n_epochs=args.n_epochs, args = args, 
                                                             train_dl = train_loader_custom_collate, test_dl = test_loader_custom_collate, val_dl=val_loader_custom_collate,
-                                                            param_initializer=params_initializer, decoder=decoder_cum,
-                                                            noise_start_step=10, noise_std=0.1, dataset_name='shd', verbose=args.verbose)
+                                                            param_initializer=params_initializer, noise_start_step=10, noise_std=0.1, dataset_name='shd', verbose=args.verbose)
