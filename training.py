@@ -1,5 +1,7 @@
+import os
 import jax
 import time
+import pickle
 import numpy as np
 import jax.numpy as jnp
 from jax.lax import scan
@@ -8,14 +10,15 @@ from jax.example_libraries import optimizers
 
 # imports from supporting files
 from utils_normalization import LayerNorm, BatchNorm
-from models import hsnn, lif_step, rlif_step, li_step, dropout
+from models import lif_step, rlif_step, li_step, dropout
 from models import decoder_cum, decoder_freq, decoder_sum, decoder_vlast, decoder_vmax
-from utils_initialization import args
 
 
-def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer, 
-                noise_start_step, noise_std, dataset_name, verbose=True):
+def train_hsnn(args, train_dl, test_dl, val_dl, param_initializer, 
+                noise_start_step, noise_std, dataset_name):
     
+    # Layer and Layer out could be different in general (output might not be spiking)
+    # so the two following function scan the lyers and jit for speed
     @jit
     def scan_layer( args_in, input_spikes ):
         args_out_layer, out_spikes_layer = scan( layer, args_in, input_spikes, length=args.nb_steps )
@@ -28,14 +31,16 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
         return args_out_layer, out_spikes_layer
     vscan_layer_out = vmap( scan_out_layer, in_axes=(None, 0))
 
+    # the following function implements the main network
     @jit
     def hsnn( args_in, input_spikes ):
-        net_params, net_states, key, dropout_rate = args_in
-        n_layers = len( net_params )
+        net_params, net_states, key, dropout_rate = args_in # input arguments
+        n_layers = len( net_params )                        # umber of layers
         # collection of output spikes
-        out_spike_net = []
+        out_spike_net = [] # collects the spikes from each layer
         # Loop over the layers
         for l in range(n_layers):
+            # selecting the right input (from the previous layer)
             if l == 0: layer_input_spike = input_spikes
             else: layer_input_spike = out_spikes_layer
             # making layers' params and states explitic
@@ -45,7 +50,7 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
                 weight, scale, bias = w
             else: weight = w
             if len(weight) ==2: weight, _ = weight
-            # we evolve the state of the neuron according to the LIF formula, Euler approximation
+            # Multiplying the weights by the spikes
             I_in = jnp.matmul(layer_input_spike, weight)
             # Normalization (if selected)
             if len(w) == 3: # it means that we'll do normalization
@@ -64,13 +69,20 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
             out_spike_net.append(out_spikes_layer)
         return out_spikes_layer, out_spike_net
     
+    # selecting the right decoder
     decoder_dict = {'cum'  : decoder_cum,
                     'sum'  : decoder_sum,
                     'vmax' : decoder_vmax,
                     'vlast': decoder_vlast,
                     'freq' : decoder_freq
                     }
-    decoder = decoder_dict[args.decoder]
+    if args.decoder in decoder_dict.keys():
+        decoder = decoder_dict[args.decoder]
+    else: 
+        print('Unrecognized Decoder, will revert to a "cum"-style decoder')
+        print('Next time choose a decoder in: '+str(list(decoder_dict.keys())))
+        args.decoder = 'cum'
+        decoder = decoder_dict[args.decoder]
 
     # network architecture
     if args.recurrent:
@@ -85,6 +97,8 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
     elif args.normalizer == 'layer': norm = LayerNorm
     else: norm = None
     
+    # Randon Number Generator
+    key = jax.random.PRNGKey(args.seed)
     key, key_model = jax.random.split(key, 2)
 
     def loss(key, net_params, net_states, X, Y, epoch, dropout_rate=0.0):
@@ -146,15 +160,15 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
         return acc
 
     # LR decay
-    if args.lr_decay_every + args.lr_start_decay < n_epochs:
+    if args.lr_decay_every + args.lr_start_decay < args.n_epochs:
         k = int( (args.n_epochs - args.lr_start_decay) // args.lr_decay_every + 1 )
         lr_decay = np.clip( args.lr_decay, 0, 1 )
-        # intervals = [ i*args.lr_decay_every for i in range(int((n_epochs)/args.lr_decay_every)-1) ]
-        # lr_values = [args.lr*(lr_decay)**i for i in range(int(n_epochs/args.lr_decay_every))]
+        # intervals = [ i*args.lr_decay_every for i in range(int((args.n_epochs)/args.lr_decay_every)-1) ]
+        # lr_values = [args.lr*(lr_decay)**i for i in range(int(args.n_epochs/args.lr_decay_every))]
         intervals = [args.lr_start_decay] + [ args.lr_start_decay+i*args.lr_decay_every for i in range(1,k) ]
         lr_values = [args.lr]+[ args.lr*(lr_decay)**(i+1) for i in range(k) ]
         pw_lr = optimizers.piecewise_constant(intervals, lr_values)
-    else: pw_lr = optimizers.piecewise_constant([n_epochs], [args.lr, args.lr*np.clip( args.lr_decay, 1e-5, 1 )])
+    else: pw_lr = optimizers.piecewise_constant([args.n_epochs], [args.lr, args.lr*np.clip( args.lr_decay, 1e-5, 1 )])
     # define the optimizer
     opt_init, opt_update, get_params = optimizers.adam(step_size=pw_lr)
     # opt_init, opt_update, get_params = optimizers.sgd(step_size=pw_lr)
@@ -167,7 +181,7 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
     train_loss = []
     train_step = 0
     best_val_acc = 5.0; net_params_best = net_params
-    for epoch in range(n_epochs):
+    for epoch in range(args.n_epochs):
         t = time.time()
         acc = 0; count = 0
         for batch_idx, (x, y) in enumerate(train_dl):
@@ -183,8 +197,8 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
             net_params = get_params(opt_state)
             # clip alpha between 0 and 1
             # if args.train_alpha:
-            #     # for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], jnp.exp(-1/5), jnp.exp(-1/25))
-            #     for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], 0, 1.0-1e-5)
+            # #     # for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], jnp.exp(-1/5), jnp.exp(-1/25))
+            #     for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], 0+1e-5, 1.0-1e-5)
             # append stats
             train_loss.append(L)
             train_step += 1
@@ -205,7 +219,7 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
             net_params_best = net_params
             best_val_acc = val_acc
 
-        if verbose: print(f'Epoch: [{epoch+1}/{n_epochs}] - Loss: {L:.5f} - '
+        if args.verbose: print(f'Epoch: [{epoch+1}/{args.n_epochs}] - Loss: {L:.5f} - '
               f' Training acc: {train_acc:.2f} - Validation acc: {val_acc:.2f} - t: {elapsed_time:.2f} sec')
         # if epoch % 50 == 0:
         #     # Save training state
@@ -234,5 +248,36 @@ def train_hsnn(key, n_epochs, args, train_dl, test_dl, val_dl, param_initializer
             acc += total_correct(net_params_best, net_states, x, y)
         test_acc = 100*acc/count
         print(f'Test Accuracy: {test_acc:.2f}')
+
+    if args.save_dir_name is not None:
+        cwd = os.getcwd()
+        directory_results = 'results'
+        path_results = os.path.join( cwd, directory_results )
+        args.save_dir_name += '_seed'+str(args.seed)
+        if not os.path.exists( path_results ): os.mkdir( path_results )
+        if os.path.exists( os.path.join(path_results, args.save_dir_name) ):
+            args.save_dir_name = 'Recovery_folder'+str(np.random.randint(0, high=1000))
+            print(f'Trying to save a results with a pre-utilized folder name. Saved as {args.save_dir_name} instead')
+        os.mkdir( os.path.join(path_results, args.save_dir_name) )
+        dict_results = {
+            'train_loss' : train_loss, 'test_acc' : test_acc, 
+            'val_acc' : val_acc, 'net_params_best' : net_params_best, 
+            'args' : args
+        }
+        # write results to pkl
+        file_name = 'model.pkl'
+        folder_file = os.path.join(path_results, args.save_dir_name)
+        pickle.dump( dict_results, open( os.path.join(folder_file, file_name), 'wb' ) )
+        # write results to csv
+        file_name_cvs = 'args_and_results.cvs'
+        with open( os.path.join(folder_file, file_name_cvs), 'w' ) as f:
+            f.write('seed,n_in,n_hid,n_layers,tau_mem,recurrent,decoder,train_alpha,hierarchy_tau,delta_tau,normalizer,train_acc,val_acc,test_acc\n')
+        with open( os.path.join(folder_file, file_name_cvs), 'a' ) as f:
+            f.write(f'{args.seed},{args.n_in},{args.n_hid},'
+                    f'{args.n_layers},{args.tau_mem:.3f},'
+                    f'{int(args.recurrent)},{args.decoder},'
+                    f'{int(args.train_alpha)},{args.hierarchy_tau},'
+                    f'{args.delta_tau},{args.normalizer},{train_acc:.4f},{best_val_acc:.4f},{test_acc:.4f}\n')
+        print(f'-- File saved in {folder_file}')
 
     return train_loss, test_acc, val_acc, net_params_best

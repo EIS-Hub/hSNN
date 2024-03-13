@@ -5,10 +5,10 @@ import jax.numpy as jnp
 class SimArgs:    
     def __init__(self, n_in = 700, n_hid = 128, n_layers = 3, 
                  seed=14, normalizer='batch', decoder='cum', 
-                 train_tau=True, hierarchy_tau=False, distrib_tau=True,
+                 train_tau=False, hierarchy_tau=False, distrib_tau=True,
                  distrib_tau_sd=0.2, tau_mem=0.2, delta_tau=0.1,
                  noise_sd=0.1, n_epochs=20, l2_lambda=0, 
-                 freq_lambda=0, dropout=0.1, recurrent=False, verbose=True ):
+                 freq_lambda=0, dropout=0.1, recurrent=False, verbose=True, save_dir_name=None):
         # archi
         self.n_in = n_in
         self.n_out = 20
@@ -26,9 +26,9 @@ class SimArgs:
         self.pert_proba = None
         self.truncation = False # to use only 150 of 280 timesteps 
         # neuron model
-        self.tau_mem = tau_mem
-        self.tau_out = 0.2
-        self.delta_tau = delta_tau
+        self.tau_mem = tau_mem # second
+        self.tau_out = 0.2 # second
+        self.delta_tau = delta_tau # second
         self.tau_start = self.tau_out - self.delta_tau # second
         self.tau_end   = self.tau_out + self.delta_tau # second
         self.recurrent = recurrent
@@ -59,6 +59,8 @@ class SimArgs:
         self.target_fr = 12.
         self.dropout_rate = dropout
         self.verbose = verbose
+        # saving options
+        self.save_dir_name = save_dir_name
 args = SimArgs()
 
 # function that initializes the hyperparameters of the network
