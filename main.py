@@ -51,5 +51,5 @@ if __name__ == '__main__':
     print('\nTraining')
     train_loss, test_acc, val_acc, net_params_best = train_loss, test_acc_shd, val_acc_shd, net_params_trained = train_hsnn( args = args, 
                                                             train_dl = train_loader_custom_collate, test_dl = test_loader_custom_collate, val_dl=val_loader_custom_collate,
-                                                            param_initializer=params_initializer, noise_start_step=10, noise_std=0.1, dataset_name='shd')
+                                                            params_initializer=params_initializer, noise_start_step=10, noise_std=0.1, dataset_name='shd')
     

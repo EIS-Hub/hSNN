@@ -7,51 +7,52 @@ class SimArgs:
                  seed=14, normalizer='batch', decoder='cum', 
                  train_tau=False, hierarchy_tau=False, distrib_tau=True,
                  distrib_tau_sd=0.2, tau_mem=0.2, delta_tau=0.1,
-                 noise_sd=0.1, n_epochs=20, l2_lambda=0, 
-                 freq_lambda=0, dropout=0.1, recurrent=False, verbose=True, save_dir_name=None):
-        # archi
-        self.n_in = n_in
-        self.n_out = 20
-        self.n_layers = n_layers
-        self.n_hid = n_hid
+                 noise_sd=0.1, n_epochs=5, l2_lambda=0, 
+                 freq_lambda=0, dropout=0.1, recurrent=False, 
+                 verbose=True, save_dir_name=None):
+        # architecture
+        self.n_in = n_in # input channels
+        self.n_out = 20 # output channels
+        self.n_layers = n_layers # number of layers
+        self.n_hid = n_hid # number of hidden neurons per layer
         # weight
         self.w_scale = [1/np.sqrt(  float(self.n_in)  )] + [1/np.sqrt( float(self.n_hid) )]*self.n_layers
         self.pos_w = False # use only positive weights at initizialization
-        self.noise_sd = 0 # [0.05, 0.1, 0.15, 0.2]
-        # data
+        self.noise_sd = 0 # noise to apply to weight during training (not supported for now)
+        # input data
         self.nb_rep = 1
-        self.nb_steps = 100 #int( np.round( self.time_max/self.timestep, 0 ) )
+        self.nb_steps = 100 # number of time steps of the input
         self.time_max = 1.4 # second
-        self.timestep = self.time_max/self.nb_steps # 0.014 #0.005 # second, 280 timesteps
-        self.pert_proba = None
-        self.truncation = False # to use only 150 of 280 timesteps 
+        self.timestep = self.time_max/self.nb_steps # second
+        self.pert_proba = None # data augmentation
+        self.truncation = False # to use only 150 of 280 timesteps
         # neuron model
-        self.tau_mem = tau_mem # second
-        self.tau_out = 0.2 # second
-        self.delta_tau = delta_tau # second
-        self.tau_start = self.tau_out - self.delta_tau # second
-        self.tau_end   = self.tau_out + self.delta_tau # second
-        self.recurrent = recurrent
-        self.distrib_tau = distrib_tau
+        self.tau_mem = tau_mem # [second], membrane voltage time constant
+        self.tau_out = 0.2 # [second], membrane voltage time constant (output neurons)
+        self.delta_tau = delta_tau # [second], different of tau between input and output layers
+        self.tau_start = np.clip(self.tau_out - self.delta_tau, 0, None) # [second] input time constant
+        self.tau_end   = np.clip(self.tau_out + self.delta_tau, 0, None) # [second] output time constant
+        self.v_rest = 0 # resting membrane voltage
+        self.v_thr = 1 # threshold voltage
+        self.v_reset = 0 # reset voltage
+        self.surrogate_fn = 'box' # type of surrogate gradient
+        self.decoder = decoder # output decoding strategy
+        self.recurrent = recurrent # enables recurrent connections
+        self.distrib_tau = distrib_tau # enables individual time constant per neuron
         self.distrib_tau_bittar = False
-        self.distrib_tau_sd = distrib_tau_sd
-        self.hierarchy_tau = hierarchy_tau
-        self.train_alpha = train_tau
-        self.normalizer = normalizer
-        self.norm_bias_init = 0.0
-        self.v_rest = 0
-        self.v_thr = 1
-        self.v_reset = 0
-        self.surrogate_fn = 'box'
-        self.decoder = decoder
+        self.distrib_tau_sd = distrib_tau_sd # standard dev of the time constant distribution
+        self.hierarchy_tau = hierarchy_tau # enables hierarchy of time constants
+        self.train_alpha = train_tau # enables training the time constant
+        self.normalizer = normalizer # selects the normalization layer
+        self.norm_bias_init = 0.0 
         # training
-        self.lr = 0.01
-        self.n_epochs = n_epochs
-        self.grad_clip = 1000
-        self.batch_size = 128
-        self.seed = seed
+        self.lr = 0.01 # learning rate
+        self.n_epochs = n_epochs # number of epochs
+        self.grad_clip = 1000 # gradient clipping
+        self.batch_size = 128 # batch size
+        self.seed = seed # seed, for reproducibility
         self.lr_config = 2 
-        self.lr_decay = 0.75 # 0.75
+        self.lr_decay = 0.75 # learning rate decay
         self.lr_decay_every = 10
         self.lr_start_decay = 25
         self.l2_lambda = l2_lambda
