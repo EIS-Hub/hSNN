@@ -1,5 +1,7 @@
-import numpy as np
+import os
 import argparse
+import numpy as np
+import jax
 
 from utils_dataset import get_dataloader
 from models import decoder_cum, decoder_sum, decoder_vlast, decoder_vmax
@@ -7,6 +9,9 @@ from utils_normalization import BatchNorm, LayerNorm
 from utils_initialization import SimArgs, params_initializer
 from training import train_hsnn
 
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".5" # needed because network is huge
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
+jax.devices()
 
 if __name__ == '__main__':
     # recover parsed arguments

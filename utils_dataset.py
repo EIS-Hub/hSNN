@@ -286,7 +286,8 @@ def custom_collate_fn(batch):
   return spikes, labels
 
 def get_dataloader( args, 
-                    cache_dir='/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD',
+                    # cache_dir='/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD',
+                    cache_dir='/home/ttorchet/data',
                     download=False,
                     verbose=False ):
     # cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD' # take data from tristan, to avoid copies #os.getcwd()
