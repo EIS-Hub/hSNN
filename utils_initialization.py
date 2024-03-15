@@ -6,8 +6,8 @@ class SimArgs:
     def __init__(self, n_in = 700, n_hid = 128, n_layers = 3, 
                  seed=14, normalizer='batch', decoder='cum', 
                  train_tau=False, hierarchy_tau=False, distrib_tau=True,
-                 distrib_tau_sd=0.2, tau_mem=0.2, delta_tau=0.1,
-                 noise_sd=0.1, n_epochs=5, l2_lambda=0, 
+                 distrib_tau_sd=0.2, tau_mem=0.1, delta_tau=0.1,
+                 noise_sd=0.1, n_epochs=5, l2_lambda=0,
                  freq_lambda=0, dropout=0.1, recurrent=False, 
                  verbose=True, save_dir_name=None):
         # architecture
@@ -30,8 +30,8 @@ class SimArgs:
         self.tau_mem = tau_mem # [second], membrane voltage time constant
         self.tau_out = 0.2 # [second], membrane voltage time constant (output neurons)
         self.delta_tau = delta_tau # [second], different of tau between input and output layers
-        self.tau_start = np.clip(self.tau_out - self.delta_tau, 0, None) # [second] input time constant
-        self.tau_end   = np.clip(self.tau_out + self.delta_tau, 0, None) # [second] output time constant
+        self.tau_start = np.clip(self.tau_mem - self.delta_tau, 0, None) # [second] input time constant
+        self.tau_end   = np.clip(self.tau_mem + self.delta_tau, 0, None) # [second] output time constant
         self.v_rest = 0 # resting membrane voltage
         self.v_thr = 1 # threshold voltage
         self.v_reset = 0 # reset voltage
@@ -70,7 +70,10 @@ def params_initializer( key, args ):
     key_hid = jax.random.split(key, args.n_layers); key=key_hid[0]; key_hid=key_hid[1:]
 
     # initialize the time constants
-    if args.hierarchy_tau: tau_layer_list = jnp.linspace( args.tau_start, args.tau_end, args.n_layers-1 )
+    if args.hierarchy_tau: 
+        tau_start = np.clip(args.tau_mem - args.delta_tau, 0, None) # [second] input time constant
+        tau_end   = np.clip(args.tau_mem + args.delta_tau, 0, None) # [second] output time constant
+        tau_layer_list = jnp.linspace( tau_start, tau_end, args.n_layers-1 )
     else: tau_layer_list = jnp.ones( args.n_layers-1 )*args.tau_mem
 
     # Initializing the weights, weight masks and time constant (alpha factors)
