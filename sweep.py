@@ -40,7 +40,7 @@ if __name__ == '__main__':
     # update the parameters to sweep
     # config['tau_mem'] = {'values':[0.01, 0.05, 0.1, 0.2, 0.4, 0.8]}
     config['delta_tau'] = {'values':[0.09]} # [-0.075, -0.05, -0.025, -0.001, 0, 0.001, 0.025, 0.05, 0.075]
-    config['seed'] = {'values':[0, 1, 2]}
+    config['seed'] = {'values':[3, 4]} # [0, 1, 2]
     config['n_epochs'] = {'value':40}
     config['n_layers'] = {'value':4}
     config['train_alpha'] = {'value':False}

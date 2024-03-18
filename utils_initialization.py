@@ -4,9 +4,9 @@ import jax.numpy as jnp
 
 class SimArgs:    
     def __init__(self, n_in = 700, n_hid = 128, n_layers = 3, 
-                 seed=14, normalizer='batch', decoder='cum', 
+                 seed=0, normalizer='batch', decoder='cum', 
                  train_tau=False, hierarchy_tau=False, distrib_tau=True,
-                 distrib_tau_sd=0.2, tau_mem=0.1, delta_tau=0.1,
+                 distrib_tau_sd=0.2, tau_mem=0.1, delta_tau=0.05,
                  noise_sd=0.1, n_epochs=5, l2_lambda=0,
                  freq_lambda=0, dropout=0.1, recurrent=False, 
                  verbose=True, save_dir_name=None):

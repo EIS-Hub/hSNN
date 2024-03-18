@@ -17,8 +17,10 @@ from models import lif_step, rlif_step, li_step, dropout
 from models import decoder_cum, decoder_freq, decoder_sum, decoder_vlast, decoder_vmax
 
 
-def train_hsnn(args, train_dl, test_dl, val_dl, params_initializer, 
-                noise_start_step, noise_std, dataset_name):
+def train_hsnn(args, dataset_name):
+    
+    # load dataloader
+    train_dl, val_dl, test_dl = get_dataloader( args=args, verbose=True )
     
     # Layer and Layer out could be different in general (output might not be spiking)
     # so the two following function scan the lyers and jit for speed

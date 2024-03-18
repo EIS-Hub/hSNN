@@ -1,7 +1,8 @@
 import os
+import jax
 import argparse
 import numpy as np
-import jax
+from datetime import datetime
 
 from utils_dataset import get_dataloader
 from models import decoder_cum, decoder_sum, decoder_vlast, decoder_vmax
@@ -50,11 +51,7 @@ if __name__ == '__main__':
                  noise_sd = parsed.noise_sd, n_epochs = parsed.n_epochs, l2_lambda = parsed.l2_lambda, 
                  freq_lambda = parsed.freq_lambda, dropout = parsed.dropout, recurrent = parsed.recurrent, verbose = parsed.verbose, save_dir_name=parsed.save_dir_name
     )
-    # Importing the dataset
-    train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate = get_dataloader( args=args, verbose=True )
 
     print('\nTraining')
-    train_loss, test_acc, val_acc, net_params_best = train_loss, test_acc_shd, val_acc_shd, net_params_trained = train_hsnn( args = args, 
-                                                            train_dl = train_loader_custom_collate, test_dl = test_loader_custom_collate, val_dl=val_loader_custom_collate,
-                                                            params_initializer=params_initializer, noise_start_step=10, noise_std=0.1, dataset_name='shd')
+    train_loss, test_acc, val_acc, net_params_best = train_hsnn( args = args, dataset_name='shd')
     
