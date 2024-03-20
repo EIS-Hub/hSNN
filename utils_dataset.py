@@ -13,9 +13,9 @@ import urllib.request
 import gzip, shutil
 import hashlib
 import h5py
-# from six.moves.urllib.error import HTTPError
-# from six.moves.urllib.error import URLError
-# from six.moves.urllib.request import urlretrieve
+from six.moves.urllib.error import HTTPError
+from six.moves.urllib.error import URLError
+from six.moves.urllib.request import urlretrieve
 
 from utils_initialization import SimArgs
 args = SimArgs()
@@ -291,6 +291,11 @@ def get_dataloader( args,
                     download=False,
                     verbose=False ):
     # cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD' # take data from tristan, to avoid copies #os.getcwd()
+    if os.getcwd() == '/home/filippo/hsnn':
+        cache_dir = '/home/ttorchet/data'
+    elif os.getcwd() == '/Users/filippomoro/Documents/hsnn':
+        cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD'
+    else: cache_dir = cache_dir
     key = jax.random.PRNGKey(args.seed)
     key, subkey_perturbation = jax.random.split(key)
     train_ds, test_ds = get_numpy_datasets(subkey_perturbation, args.pert_proba, 'shd', args.n_in, cache_dir=cache_dir, download=download, nb_steps=args.nb_steps, truncation=args.truncation)

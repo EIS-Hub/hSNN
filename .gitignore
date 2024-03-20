@@ -1,3 +1,4 @@
 # exclude the /results folder
 results/
 wandb/
+__pycache__/
