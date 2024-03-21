@@ -197,13 +197,16 @@ def train_hsnn(args, dataset_name):
             # possibly remove gradient from alpha
             if not args.train_alpha:
                 for g in range(len(grads)): grads[g][1] *= 0
+            else: 
+                for g in range(len(grads)): grads[g][1] *= 1e-9 #5e-10 #1e-12
+                grads[-1][1] *= 0.
             # weight update
             opt_state = opt_update(epoch, grads, opt_state)
             net_params = get_params(opt_state)
             # clip alpha between 0 and 1
-            # if args.train_alpha:
-            # #     # for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], jnp.exp(-1/5), jnp.exp(-1/25))
-            #     for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], 0+1e-5, 1.0-1e-5)
+            if args.train_alpha:
+            #     # for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], jnp.exp(-1/5), jnp.exp(-1/25))
+                for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], 0+1e-5, 1.0-1e-2)
             # append stats
             train_loss.append(L)
             train_step += 1
@@ -229,24 +232,22 @@ def train_hsnn(args, dataset_name):
 
     # Testing Loop
     acc = 0; val_acc = 0; count = 0
-    if dataset_name in ['shd', 'all']:
-        for batch_idx, (x, y) in enumerate(val_dl):
-            key, key_epoch = jax.random.split(key)
-            _, net_states = params_initializer(key=key_epoch, args=args)
-            count += x.shape[0]
-            acc += total_correct(net_params_best, net_states, x, y)
-        val_acc = 100*acc/count
-        print(f'Validation Accuracy: {val_acc:.2f}')
-
-    acc = 0; test_acc = 0; count = 0
-    if dataset_name in ['shd', 'all']:
+    for batch_idx, (x, y) in enumerate(val_dl):
         key, key_epoch = jax.random.split(key)
         _, net_states = params_initializer(key=key_epoch, args=args)
-        for batch_idx, (x, y) in enumerate(test_dl):
-            count += x.shape[0]
-            acc += total_correct(net_params_best, net_states, x, y)
-        test_acc = 100*acc/count
-        print(f'Test Accuracy: {test_acc:.2f}')
+        count += x.shape[0]
+        acc += total_correct(net_params_best, net_states, x, y)
+    val_acc = 100*acc/count
+    print(f'Validation Accuracy: {val_acc:.2f}')
+
+    acc = 0; test_acc = 0; count = 0
+    key, key_epoch = jax.random.split(key)
+    _, net_states = params_initializer(key=key_epoch, args=args)
+    for batch_idx, (x, y) in enumerate(test_dl):
+        count += x.shape[0]
+        acc += total_correct(net_params_best, net_states, x, y)
+    test_acc = 100*acc/count
+    print(f'Test Accuracy: {test_acc:.2f}')
 
     if args.save_dir_name is not None:
         cwd = os.getcwd()
@@ -472,13 +473,16 @@ def train_hsnn_wandb(args=None):
             # possibly remove gradient from alpha
             if not args.train_alpha:
                 for g in range(len(grads)): grads[g][1] *= 0
+            else: 
+                for g in range(len(grads)): grads[g][1] *= 1e-9 #5e-10 #1e-12
+                grads[-1][1] *= 0.
             # weight update
             opt_state = opt_update(epoch, grads, opt_state)
             net_params = get_params(opt_state)
             # clip alpha between 0 and 1
-            # if args.train_alpha:
-            # #     # for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], jnp.exp(-1/5), jnp.exp(-1/25))
-            #     for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], 0+1e-5, 1.0-1e-5)
+            if args.train_alpha:
+            #     # for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], jnp.exp(-1/5), jnp.exp(-1/25))
+                for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], 0+1e-5, 1.0-1e-2)
             # append stats
             train_loss.append(L)
             train_step += 1
