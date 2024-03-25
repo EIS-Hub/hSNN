@@ -10,7 +10,7 @@ from utils_normalization import BatchNorm, LayerNorm
 from utils_initialization import SimArgs, params_initializer
 from training import train_hsnn_wandb
 
-os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".5" # needed because network is huge
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".3" # needed because network is huge
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 jax.devices()
 
@@ -45,23 +45,40 @@ if __name__ == '__main__':
         
     ### Delta_tau_train_alpha_False
     if parsed.sweep_name == 'Delta_tau_train_alpha_False':
-        config['delta_tau'] = {'values':[0.09]} # [-0.075, -0.05, -0.025, -0.001, 0, 0.001, 0.025, 0.05, 0.075]
-        config['seed'] = {'values':[3, 4]} # [0, 1, 2]
+        print('Starting with the sweep on Delta Tau (hierarchy)')
+        config['delta_tau'] = {'values':[-0.075, -0.05, -0.025, 0, 0.025, 0.05, 0.075, 0.09]} # [-0.075, -0.05, -0.025, -0.001, 0, 0.001, 0.025, 0.05, 0.075]
+        config['seed'] = {'values':[5,6,7,8,9]} # [0, 1, 2, 3, 4] [5,6,7,8,9]
         config['n_epochs'] = {'value':40}
         config['n_layers'] = {'value':4}
         config['train_alpha'] = {'value':False}
+        config['distrib_tau'] = {'value':False}
         config['hierarchy_tau'] = {'value':True}
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="Delta_tau_train_alpha_False")
 
     ### Tau_mem_train_alpha_False
     elif parsed.sweep_name == 'Tau_mem_train_alpha_False':
-        config['tau_mem'] = {'values':[0.01, 0.05, 0.1, 0.2, 0.4, 0.8]}
-        config['seed'] = {'values':[0,1,2,3,4]} # [0, 1, 2]
+        print('Starting with the sweep on the Time Constant')
+        config['tau_mem'] = {'values':[0.01, 0.05, 0.1, 0.2, 0.4]} # [0.01, 0.05, 0.1, 0.2, 0.4]
+        config['seed'] = {'values':[6,7,8,9]} # [0, 1, 2]
         config['n_epochs'] = {'value':40}
         config['n_layers'] = {'value':4}
+        # config['distrib_tau'] = {'value':False}
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="Tau_mem_train_alpha_False")
+
+    ### Num_Layers
+    elif parsed.sweep_name == 'Num_layers_train_alpha_False':
+        print('Starting with the sweep on the Time Constant')
+        config['n_layers'] = {'values':[3,4,5]}
+        config['n_hid'] = {'values':[256]}
+        config['seed'] = {'values':[0,1,2]} # [0, 1, 2]
+        config['hierarchy_tau'] = {'values':[True, False]}
+        config['n_epochs'] = {'value':60}
+        config['delta_tau'] = {'value':0.075}
+        config['distrib_tau'] = {'value':'uniform'}
+        sweep_config['parameters'] = config
+        sweep_id = wandb.sweep(sweep_config, project="Num_layers_train_alpha_False")
 
     ### Test
     else:

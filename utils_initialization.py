@@ -5,7 +5,7 @@ import jax.numpy as jnp
 class SimArgs:    
     def __init__(self, n_in = 700, n_hid = 128, n_layers = 3, 
                  seed=0, normalizer='batch', decoder='cum', 
-                 train_tau=False, hierarchy_tau=False, distrib_tau=True,
+                 train_tau=False, hierarchy_tau=False, distrib_tau='uniform',
                  distrib_tau_sd=0.2, tau_mem=0.1, delta_tau=0.05,
                  noise_sd=0.1, n_epochs=5, l2_lambda=0,
                  freq_lambda=0, dropout=0.1, recurrent=False, 
@@ -17,7 +17,6 @@ class SimArgs:
         self.n_hid = n_hid # number of hidden neurons per layer
         # weight
         self.w_scale = [1/np.sqrt(  float(self.n_in)  )] + [1/np.sqrt( float(self.n_hid) )]*self.n_layers
-        self.pos_w = False # use only positive weights at initizialization
         self.noise_sd = 0 # noise to apply to weight during training (not supported for now)
         # input data
         self.nb_rep = 1
@@ -30,8 +29,6 @@ class SimArgs:
         self.tau_mem = tau_mem # [second], membrane voltage time constant
         self.tau_out = 0.2 # [second], membrane voltage time constant (output neurons)
         self.delta_tau = delta_tau # [second], different of tau between input and output layers
-        self.tau_start = np.clip(self.tau_mem - self.delta_tau, 0, None) # [second] input time constant
-        self.tau_end   = np.clip(self.tau_mem + self.delta_tau, 0, None) # [second] output time constant
         self.v_rest = 0 # resting membrane voltage
         self.v_thr = 1 # threshold voltage
         self.v_reset = 0 # reset voltage
@@ -95,17 +92,22 @@ def params_initializer( key, args ):
             # if args.hierarchy_tau: tau_layer = args.tau_start + (l/ (args.n_layers-1))*( args.tau_end-args.tau_start )
             # else: tau_layer = args.tau_mem
             tau_layer = tau_layer_list[l]
-            if args.distrib_tau:
-                # tau_l = jax.random.uniform(key_hid[l], [args.n_hid], minval=np.exp(-1/5), maxval=np.exp(-1/25)  )
-                tau_l = jax.random.uniform(key_hid[l], [args.n_hid], minval=tau_layer*(1-args.distrib_tau_sd), maxval=tau_layer*(1+args.distrib_tau_sd)  )
-                # tau_l = jax.random.normal(key_hid[l], [args.n_hid]) * args.distrib_tau_sd * tau_layer + tau_layer
+            if args.distrib_tau == 'uniform':
+                tau_l = jax.random.uniform(key_hid[l], [args.n_hid], 
+                                           minval=tau_layer*(1-args.distrib_tau_sd), 
+                                           maxval=tau_layer*(1+args.distrib_tau_sd)  )
                 tau_l = jnp.clip( tau_l, 1e-10, 10 ) # clipping to avoid too short/long time constant
-                if args.distrib_tau_bittar: tau_l = jax.random.uniform(key_hid[l], [args.n_hid], minval=args.timestep*5, maxval=args.timestep*25  )
+                if args.distrib_tau_bittar: tau_l = jax.random.uniform(key_hid[l], 
+                                                                       [args.n_hid], 
+                                                                        minval=args.timestep*5, 
+                                                                        maxval=args.timestep*25 )
+            elif args.distrib_tau == 'normal':
+                tau_l = jax.random.normal(key_hid[l], [args.n_hid]) * args.distrib_tau_sd * tau_layer + tau_layer
+                tau_l = jnp.clip( tau_l, 1e-10, 10 ) # clipping to avoid too short/long time constant
             else:
                 tau_l = tau_layer
             alpha_l = jnp.exp(-args.timestep/tau_l)
-            # alpha_l = jax.random.normal( key_hid[l], [args.n_hid] ) * jnp.exp( -args.timestep/tau_layer ) * args.distrib_tau_sd + jnp.exp( -args.timestep/tau_layer )
-            alpha_l = jnp.clip( alpha_l, 0.5, 0.99 )
+            alpha_l = jnp.clip( alpha_l, 0.1, 0.99 )
 
         # initializing the hidden weights with a normal distribution
         if not args.recurrent: w_scale_ff = w_scale[l]

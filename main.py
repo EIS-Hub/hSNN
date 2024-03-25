@@ -28,7 +28,7 @@ if __name__ == '__main__':
     # time constant
     parser.add_argument('--train_alpha', type=bool, default=False)
     parser.add_argument('--hierarchy_tau', type=bool, default=False)
-    parser.add_argument('--distrib_tau', type=bool, default=True)
+    parser.add_argument('--distrib_tau', type=str, default='uniform')
     parser.add_argument('--distrib_tau_sd', type=float, default=0.2)
     parser.add_argument('--tau_mem', type=float, default=0.1)
     parser.add_argument('--delta_tau', type=float, default=0.05)
