@@ -17,7 +17,7 @@ from models import lif_step, rlif_step, li_step, dropout
 from models import decoder_cum, decoder_freq, decoder_sum, decoder_vlast, decoder_vmax
 
 
-def train_hsnn(args, dataset_name):
+def train_hsnn(args):
     
     # load dataloader
     train_dl, val_dl, test_dl = get_dataloader( args=args, verbose=True )

@@ -9,10 +9,11 @@ class SimArgs:
                  distrib_tau_sd=0.2, tau_mem=0.1, delta_tau=0.05,
                  noise_sd=0.1, n_epochs=5, l2_lambda=0,
                  freq_lambda=0, dropout=0.1, recurrent=False, 
-                 verbose=True, save_dir_name=None):
+                 verbose=True, save_dir_name=None, dataset_name = 'shd'):
         # architecture
+        self.dataset_name = dataset_name
         self.n_in = n_in # input channels
-        self.n_out = 20 # output channels
+        self.n_out = 20 if self.dataset_name =='shd' else 35  # output channels
         self.n_layers = n_layers # number of layers
         self.n_hid = n_hid # number of hidden neurons per layer
         # weight

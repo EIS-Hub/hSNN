@@ -34,9 +34,7 @@ def get_audio_dataset(cache_dir, cache_subdir, dataset_name):
     if dataset_name == 'shd':
         files = [ "shd_train.h5.gz", "shd_test.h5.gz"]
     if dataset_name == 'ssc':
-        files = [ "ssc_train.h5.gz", "ssc_test.h5.gz"]
-    if dataset_name == 'all':
-        files = [ "shd_train.h5.gz", "shd_test.h5.gz", "ssc_train.h5.gz", "ssc_test.h5.gz"]
+        files = [ "ssc_train.h5.gz", "ssc_valid.h5.gz", "ssc_test.h5.gz"]
 
     for fn in files:
         origin = f"{base_url}/{fn}"
@@ -57,48 +55,43 @@ def get_and_gunzip(origin, filename, md5hash=None, cache_dir=None,
             shutil.copyfileobj(f_in, f_out)
     return hdf5_file_path
 
-def get_numpy_datasets(subkey_perturbation, pert_proba, dataset_name, n_inp, cache_dir, nb_steps, download=False, truncation=False):
-    cache_subdir = f"audiospikes" #f"audiospikes_{n_inp}"
+def get_numpy_datasets(subkey_perturbation, pert_proba, n_inp, cache_dir, nb_steps, dataset_name='shd', download=False, truncation=False):
+    cache_subdir = f"audiospikes"
     if download:
         get_audio_dataset(cache_dir, cache_subdir, dataset_name)
 
     train_ds = []; test_ds = []
-    if dataset_name in ['shd', 'all']:
-        train_shd_file = h5py.File(os.path.join(cache_dir, cache_subdir,
-                                                'shd_train.h5'
+    if dataset_name in ['shd', 'ssc']:
+        train_file = h5py.File(os.path.join(cache_dir, cache_subdir,
+                                                dataset_name+'_train.h5'
                                                 ), 'r')
-        test_shd_file  = h5py.File(os.path.join(cache_dir, cache_subdir,
-                                                'shd_test.h5'
+        test_file  = h5py.File(os.path.join(cache_dir, cache_subdir,
+                                                dataset_name+'_test.h5'
                                                 ), 'r')
-        shd_train_ds = DatasetNumpy(train_shd_file['spikes'],
-                                    train_shd_file['labels'],
-                                    name='shd', target_dim=n_inp, nb_rep=1, ################################################ nb_rep
+        _train_ds = DatasetNumpy(train_file['spikes'],
+                                    train_file['labels'],
+                                    name=dataset_name, target_dim=n_inp, nb_rep=1,
                                     nb_steps=nb_steps, pert_proba=pert_proba, 
                                     subkey_perturbation=subkey_perturbation, 
                                     truncation=truncation) 
-        shd_test_ds  = DatasetNumpy(test_shd_file['spikes'],
-                                    test_shd_file['labels'],
-                                    name='shd', target_dim=n_inp, nb_rep=1, ################################################ nb_rep
+        _test_ds  = DatasetNumpy(test_file['spikes'],
+                                    test_file['labels'],
+                                    name=dataset_name, target_dim=n_inp, nb_rep=1, ################################################ nb_rep
                                     nb_steps=nb_steps, truncation=truncation) 
-        train_ds.append(shd_train_ds)
-        test_ds.append(shd_test_ds)
-
-    # if dataset_name in ['ssc', 'all']:
-    #     train_ssc_file = h5py.File(os.path.join(cache_dir, cache_subdir,
-    #                                             'ssc_train.h5'
-    #                                             ), 'r')
-    #     test_ssc_file  = h5py.File(os.path.join(cache_dir, cache_subdir,
-    #                                             'ssc_test.h5'
-    #                                             ), 'r')
-    #     ssc_train_ds = DatasetNumpy(train_ssc_file['spikes'],
-    #                                 train_ssc_file['labels'],
-    #                                 name='ssc', target_dim=n_inp)
-    #     ssc_test_ds  = DatasetNumpy(test_ssc_file['spikes'],
-    #                                 test_ssc_file['labels'],
-    #                                 name='ssc', target_dim=n_inp)
-    #     train_ds.append(ssc_train_ds)
-    #     test_ds.append(ssc_test_ds)
-
+        if dataset_name == 'ssc':
+            valid_file = h5py.File(os.path.join(cache_dir, cache_subdir,
+                                                dataset_name+'_valid.h5'
+                                                ), 'r')
+            _valid_ds = DatasetNumpy(valid_file['spikes'],
+                                    valid_file['labels'],
+                                    name=dataset_name, target_dim=n_inp, nb_rep=1,
+                                    nb_steps=nb_steps, pert_proba=pert_proba, 
+                                    subkey_perturbation=subkey_perturbation, 
+                                    truncation=truncation) 
+            
+            train_ds.append( [_train_ds, _valid_ds] )
+        else: train_ds.append( _train_ds )
+    test_ds.append(_test_ds)
     return train_ds, test_ds
 
 class DatasetNumpy(torch.utils.data.Dataset):
@@ -289,7 +282,7 @@ def get_dataloader( args,
                     cache_dir='/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD',
                     # cache_dir='/home/ttorchet/data',
                     download=False,
-                    verbose=False ):
+                    verbose=False):
     # cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD' # take data from tristan, to avoid copies #os.getcwd()
     if os.getcwd() == '/home/filippo/hsnn':
         cache_dir = '/home/ttorchet/data'
@@ -298,22 +291,26 @@ def get_dataloader( args,
     else: cache_dir = cache_dir
     key = jax.random.PRNGKey(args.seed)
     key, subkey_perturbation = jax.random.split(key)
-    train_ds, test_ds = get_numpy_datasets(subkey_perturbation, args.pert_proba, 'shd', args.n_in, cache_dir=cache_dir, download=download, nb_steps=args.nb_steps, truncation=args.truncation)
-    # print(len(train_ds[0]))
-
-    train_ds = train_ds[0]
-    test_ds = test_ds[0]
-
+    train_ds, test_ds = get_numpy_datasets(subkey_perturbation, args.pert_proba, args.n_in, 
+                                           cache_dir=cache_dir, download=download,
+                                           dataset_name=args.dataset_name, 
+                                           nb_steps=args.nb_steps, truncation=args.truncation)
     # Set random seeds for reproducibility
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
 
-    train_size = int(0.8 * len(train_ds))
-    val_size   = len(train_ds) - train_size
-    train_ds_split, val_ds_split = random_split(train_ds, [train_size, val_size])
+    # Validation set splitting (if not explicit in dataset)
+    train_ds = train_ds[0]
+    test_ds = test_ds[0]
+    if args.dataset_name == 'ssc':
+        train_ds_split, val_ds_split = train_ds
+    else:
+        train_size = int(0.8 * len(train_ds))
+        val_size   = len(train_ds) - train_size
+        train_ds_split, val_ds_split = random_split(train_ds, [train_size, val_size])
     if verbose:
-        print(f'Train DL size: {len(train_ds)}, Validation DL size: {len(val_ds_split)}, Test DL size: {len(test_ds)}')
+        print(f'Train DL size: {len(train_ds_split)}, Validation DL size: {len(val_ds_split)}, Test DL size: {len(test_ds)}')
 
     train_loader_custom_collate = DataLoader(train_ds_split, args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
     val_loader_custom_collate   = DataLoader(val_ds_split,   args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
