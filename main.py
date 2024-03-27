@@ -40,6 +40,7 @@ if __name__ == '__main__':
     parser.add_argument('--freq_lambda', type=float, default=0)
     parser.add_argument('--dropout', type=float, default=0.1)
     parser.add_argument('--verbose', type=bool, default=True)
+    parser.add_argument('--dataset_name', type=str, default='shd')
     parser.add_argument('--save_dir_name', type=str, default=None)
     parsed = parser.parse_args()
     print(parsed)
@@ -49,9 +50,10 @@ if __name__ == '__main__':
                  train_tau = parsed.train_alpha, hierarchy_tau = parsed.hierarchy_tau, distrib_tau = parsed.distrib_tau,
                  distrib_tau_sd = parsed.distrib_tau_sd, tau_mem = parsed.tau_mem, delta_tau = parsed.delta_tau,
                  noise_sd = parsed.noise_sd, n_epochs = parsed.n_epochs, l2_lambda = parsed.l2_lambda, 
-                 freq_lambda = parsed.freq_lambda, dropout = parsed.dropout, recurrent = parsed.recurrent, verbose = parsed.verbose, save_dir_name=parsed.save_dir_name
+                 freq_lambda = parsed.freq_lambda, dropout = parsed.dropout, recurrent = parsed.recurrent, 
+                 verbose = parsed.verbose, save_dir_name=parsed.save_dir_name, dataset_name=parsed.dataset_name
     )
 
     print('\nTraining')
-    train_loss, test_acc, val_acc, net_params_best = train_hsnn( args = args, dataset_name='shd')
+    train_loss, test_acc, val_acc, net_params_best = train_hsnn( args = args )
     

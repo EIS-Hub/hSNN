@@ -285,7 +285,7 @@ def get_dataloader( args,
                     verbose=False):
     # cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD' # take data from tristan, to avoid copies #os.getcwd()
     if os.getcwd() == '/home/filippo/hsnn':
-        cache_dir = '/home/ttorchet/data'
+        cache_dir = '/home/filippo/data'
     elif os.getcwd() == '/Users/filippomoro/Documents/hsnn':
         cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD'
     else: cache_dir = cache_dir

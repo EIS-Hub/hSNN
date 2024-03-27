@@ -57,9 +57,9 @@ def lif_step( args_in, input_spikes ):
     # state: the parameters (weights) and the state of the neurons (spikes, inputs and membrane, ecc..)
     w, alpha = net_params; w_mask, tau, V_mem, out_spikes, v_thr, noise_sd = net_states
 
-    # V_mem = (alpha) * (V_mem - out_spikes) + (1-alpha) * I_in #- out_spikes*v_thr
+    # V_mem = (alpha) * (V_mem - out_spikes) + (1-alpha) * input_spikes - out_spikes*v_thr
     # V_mem = (alpha) * (V_mem - out_spikes) + I_in #- out_spikes*v_thr
-    V_mem = alpha * V_mem + input_spikes - out_spikes*v_thr
+    V_mem = alpha * V_mem + (1-alpha)* input_spikes - out_spikes*v_thr
     out_spikes = spiking_fn( V_mem, v_thr )
     
     return [ [w, alpha], [w_mask, tau, V_mem, out_spikes, v_thr, noise_sd] ], out_spikes
