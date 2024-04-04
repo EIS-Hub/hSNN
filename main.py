@@ -31,7 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('--distrib_tau', type=str, default='uniform')
     parser.add_argument('--distrib_tau_sd', type=float, default=0.2)
     parser.add_argument('--tau_mem', type=float, default=0.1)
-    parser.add_argument('--delta_tau', type=float, default=0.05)
+    parser.add_argument('--delta_tau', type=float, default=0.075)
     # noise
     parser.add_argument('--noise_sd', type=float, default=0.1)
     # regularizers and training args

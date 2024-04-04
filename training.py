@@ -198,15 +198,11 @@ def train_hsnn(args):
             if not args.train_alpha:
                 for g in range(len(grads)): grads[g][1] *= 0
             else: 
-                for g in range(len(grads)): grads[g][1] *= 1e-9 #5e-10 #1e-12
+                for g in range(len(grads)): grads[g][1] *= 1 #1e-9
                 grads[-1][1] *= 0.
             # weight update
             opt_state = opt_update(epoch, grads, opt_state)
             net_params = get_params(opt_state)
-            # clip alpha between 0 and 1
-            if args.train_alpha:
-            #     # for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], jnp.exp(-1/5), jnp.exp(-1/25))
-                for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], 0+1e-5, 1.0-1e-2)
             # append stats
             train_loss.append(L)
             train_step += 1
@@ -298,8 +294,8 @@ def train_hsnn_wandb(args=None):
     # load dataloader
     train_dl, val_dl, test_dl = get_dataloader( args=args, verbose=True )
     
-    # Layer and Layer out could be different in general (output might not be spiking)
-    # so the two following function scan the lyers and jit for speed
+    # Layer and Layer-out could be different in general (output might not be spiking)
+    # so the two following function scan the layers and jit for speed
     @jit
     def scan_layer( args_in, input_spikes ):
         args_out_layer, out_spikes_layer = scan( layer, args_in, input_spikes, length=args.nb_steps )
@@ -474,15 +470,11 @@ def train_hsnn_wandb(args=None):
             if not args.train_alpha:
                 for g in range(len(grads)): grads[g][1] *= 0
             else: 
-                for g in range(len(grads)): grads[g][1] *= 1e-9 #5e-10 #1e-12
+                for g in range(len(grads)): grads[g][1] *= 1 #5e-10 #1e-12
                 grads[-1][1] *= 0.
             # weight update
             opt_state = opt_update(epoch, grads, opt_state)
             net_params = get_params(opt_state)
-            # clip alpha between 0 and 1
-            if args.train_alpha:
-            #     # for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], jnp.exp(-1/5), jnp.exp(-1/25))
-                for g in range(len(net_params)): net_params[g][1] = jnp.clip(net_params[g][1], 0+1e-5, 1.0-1e-2)
             # append stats
             train_loss.append(L)
             train_step += 1

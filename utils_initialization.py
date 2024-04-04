@@ -47,7 +47,7 @@ class SimArgs:
         self.lr = 0.01 # learning rate
         self.n_epochs = n_epochs # number of epochs
         self.grad_clip = 1000 # gradient clipping
-        self.batch_size = 128 # batch size
+        self.batch_size = 256 # batch size
         self.seed = seed # seed, for reproducibility
         self.lr_config = 2 
         self.lr_decay = 0.75 # learning rate decay
