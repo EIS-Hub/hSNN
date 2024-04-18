@@ -6,7 +6,7 @@ class SimArgs:
     def __init__(self, n_in = 700, n_hid = 128, n_layers = 3, 
                  seed=0, normalizer='batch', decoder='cum', 
                  train_tau=False, hierarchy_tau=False, distrib_tau='uniform',
-                 distrib_tau_sd=0.2, tau_mem=0.1, delta_tau=0.05,
+                 distrib_tau_sd=0.2, tau_mem=0.1, delta_tau=0.075,
                  noise_sd=0.1, n_epochs=5, l2_lambda=0,
                  freq_lambda=0, dropout=0.1, recurrent=False, 
                  verbose=True, save_dir_name=None, dataset_name = 'shd'):
@@ -60,6 +60,7 @@ class SimArgs:
         self.verbose = verbose
         # saving options
         self.save_dir_name = save_dir_name
+        self.wandb = True
 args = SimArgs()
 
 # function that initializes the hyperparameters of the network

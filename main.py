@@ -20,7 +20,7 @@ if __name__ == '__main__':
     # network architecture
     parser.add_argument('--n_in', type=int, default=700)
     parser.add_argument('--n_hid', type=int, default=128)
-    parser.add_argument('--n_layers', type=int, default=3)
+    parser.add_argument('--n_layers', type=int, default=4)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--normalizer', type=str, default='batch')
     parser.add_argument('--decoder', type=str, default='cum')
@@ -55,5 +55,5 @@ if __name__ == '__main__':
     )
 
     print('\nTraining')
-    train_loss, test_acc, val_acc, net_params_best = train_hsnn( args = args )
+    train_loss, test_acc, val_acc, net_params_best = train_hsnn( args = args, wandb_flag=False )
     

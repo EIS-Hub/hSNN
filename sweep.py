@@ -8,7 +8,7 @@ from utils_dataset import get_dataloader
 from models import decoder_cum, decoder_sum, decoder_vlast, decoder_vmax
 from utils_normalization import BatchNorm, LayerNorm
 from utils_initialization import SimArgs, params_initializer
-from training import train_hsnn_wandb
+from training import train_hsnn
 
 os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".75" # needed because network is huge
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
@@ -84,11 +84,11 @@ if __name__ == '__main__':
 
     ### Test
     else:
-        config['seed'] = {'value':0}
-        config['n_epochs'] = {'value':5}
-        config['n_layers'] = {'value':4}
+        config['seed'] = {'values':[0]}
+        config['n_epochs'] = {'value':2}
+        config['n_layers'] = {'value':3}
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_test")
 
     ### Launch the sweep
-    wandb.agent(sweep_id, train_hsnn_wandb)
+    wandb.agent(sweep_id, train_hsnn)
