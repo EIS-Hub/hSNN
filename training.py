@@ -14,7 +14,7 @@ from utils_dataset import get_dataloader
 from utils_initialization import params_initializer
 from utils_normalization import LayerNorm, BatchNorm
 from models import lif_step, rlif_step, li_step, dropout
-from models import decoder_cum, decoder_freq, decoder_sum, decoder_vlast, decoder_vmax
+from models import decoder_cum, decoder_freq, decoder_sum, decoder_vlast, decoder_vmax, decoder_vmem_time
 
 
 def train_hsnn(args=None, wandb_flag=True):
@@ -85,10 +85,13 @@ def train_hsnn(args=None, wandb_flag=True):
                     'sum'  : decoder_sum,
                     'vmax' : decoder_vmax,
                     'vlast': decoder_vlast,
-                    'freq' : decoder_freq
+                    'freq' : decoder_freq,
+                    'vmem_time' : decoder_vmem_time,
                     }
     if args.decoder in decoder_dict.keys():
         decoder = decoder_dict[args.decoder]
+    elif args.dataset_name == 'mts_xor':
+        decoder = decoder_vmem_time
     else: 
         print('Unrecognized Decoder, will revert to a "cum"-style decoder')
         print('Next time choose a decoder in: '+str(list(decoder_dict.keys())))
@@ -129,7 +132,7 @@ def train_hsnn(args=None, wandb_flag=True):
         Yhat = decoder( output_layer )
         # Yhat = jax.nn.softmax( net_states_hist[-1][3][:,-1] )
         # compute the loss and correct examples
-        num_correct = jnp.sum(jnp.equal(jnp.argmax(Yhat, 1), jnp.argmax(Y, 1)))
+        num_correct = jnp.sum(jnp.equal(jnp.argmax(Yhat, -1), jnp.argmax(Y, -1)))
         # cross entropy loss
         loss_ce = -jnp.mean( jnp.sum(Y * jnp.log(Yhat+1e-12), axis=-1) )
         # L2 norm
@@ -162,14 +165,24 @@ def train_hsnn(args=None, wandb_flag=True):
         return grads, opt_state, value
 
     def one_hot(x, n_class):
-        return jnp.array(x[:, None] == jnp.arange(n_class), dtype=jnp.float32)
+        if args.dataset_name == 'mts_xor':
+            return jnp.array(x[:,:, None] == jnp.arange(n_class), dtype=jnp.float32)
+        else:
+            return jnp.array(x[:, None] == jnp.arange(n_class), dtype=jnp.float32)
 
     def total_correct(net_params, net_states, X, Y):
         args_in = [net_params, net_states, key, 0.]
         output_layer, _ = hsnn( args_in, X )
         Yhat = decoder( output_layer )
         # Yhat = jax.nn.softmax( net_states_hist[-1][3][:,-1] )
-        acc = jnp.sum(jnp.equal(jnp.argmax(Yhat, 1), Y))
+        if args.dataset_name == 'mts_xor':
+            start_time = 10; coding_time=10; remain_time=5; idx = []
+            for i in range(100):
+                if (((i-start_time) % (coding_time+remain_time)) >= remain_time)and(i>start_time):
+                    idx.append(i)
+            idx = jnp.array(idx)
+            Yhat, Y = jnp.take(Yhat, idx, axis=1), jnp.take(Y, idx, axis=1)
+        acc = jnp.mean(jnp.equal(jnp.argmax(Yhat, -1), Y))
         return acc
 
     # LR decay
@@ -218,6 +231,7 @@ def train_hsnn(args=None, wandb_flag=True):
             count += x.shape[0]
         
         ### Training logs
+        if args.dataset_name == 'mts_xor': count = count*args.nb_steps
         train_acc = 100*acc/count
         elapsed_time = time.time() - t            
         ### Validation
@@ -225,7 +239,8 @@ def train_hsnn(args=None, wandb_flag=True):
         for batch_idx, (x, y) in enumerate(val_dl):
             count_val += x.shape[0]
             acc_val += total_correct(net_params, net_states, x, y)
-        val_acc = 100*acc_val/count_val
+        # if args.dataset_name == 'mts_xor': count_val = count_val*args.nb_steps
+        val_acc = 100*acc_val/(batch_idx+1) #/count_val
         # save best model is validation accuracy is improved
         if val_acc >= best_val_acc: 
             net_params_best = net_params
@@ -242,7 +257,8 @@ def train_hsnn(args=None, wandb_flag=True):
         _, net_states = params_initializer(key=key_epoch, args=args)
         count += x.shape[0]
         acc += total_correct(net_params_best, net_states, x, y)
-    val_acc = 100*acc/count
+    if args.dataset_name == 'mts_xor': count = count*args.nb_steps
+    val_acc = 100*acc/(batch_idx+1) #/count
     print(f'Validation Accuracy: {val_acc:.2f}')
 
     acc = 0; test_acc = 0; count = 0
@@ -251,7 +267,8 @@ def train_hsnn(args=None, wandb_flag=True):
     for batch_idx, (x, y) in enumerate(test_dl):
         count += x.shape[0]
         acc += total_correct(net_params_best, net_states, x, y)
-    test_acc = 100*acc/count
+    if args.dataset_name == 'mts_xor': count = count*args.nb_steps
+    test_acc = 100*acc/(batch_idx+1) #/count
     print(f'Test Accuracy: {test_acc:.2f}')
     if wandb_flag: wandb.log({'Test Acc': test_acc})
 

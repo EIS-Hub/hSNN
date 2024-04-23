@@ -40,11 +40,12 @@ class SimArgs:
         self.distrib_tau_bittar = False
         self.distrib_tau_sd = distrib_tau_sd # standard dev of the time constant distribution
         self.hierarchy_tau = hierarchy_tau # enables hierarchy of time constants
+        self.tanh_coef = 0.1
         self.train_alpha = train_tau # enables training the time constant
         self.normalizer = normalizer # selects the normalization layer
         self.norm_bias_init = 0.0 
         # training
-        self.lr = 0.01 # learning rate
+        self.lr = 0.01 # 0.01 # learning rate
         self.n_epochs = n_epochs # number of epochs
         self.grad_clip = 1000 # gradient clipping
         self.batch_size = 256 # batch size
@@ -61,6 +62,7 @@ class SimArgs:
         # saving options
         self.save_dir_name = save_dir_name
         self.wandb = True
+        self.experiment_name = 'hssn_test'
 args = SimArgs()
 
 # function that initializes the hyperparameters of the network
@@ -69,11 +71,15 @@ def params_initializer( key, args ):
     key_hid = jax.random.split(key, args.n_layers); key=key_hid[0]; key_hid=key_hid[1:]
 
     # initialize the time constants
-    if args.hierarchy_tau: 
+    if args.hierarchy_tau == 'tanh':
+        tanh = lambda x, a: (np.exp(2*x/a)-1)/(np.exp(2*x/a)+1)
+        tau_layer_list = args.tau_mem + tanh( (np.linspace(0,1,args.n_layers-1)-0.5), args.tanh_coef ) * args.delta_tau
+    elif args.hierarchy_tau == 'linear':
         tau_start = np.clip(args.tau_mem - args.delta_tau, 0, None) # [second] input time constant
         tau_end   = np.clip(args.tau_mem + args.delta_tau, 0, None) # [second] output time constant
         tau_layer_list = jnp.linspace( tau_start, tau_end, args.n_layers-1 )
-    else: tau_layer_list = jnp.ones( args.n_layers-1 )*args.tau_mem
+    else: 
+        tau_layer_list = jnp.ones( args.n_layers-1 )*args.tau_mem
 
     # Initializing the weights, weight masks and time constant (alpha factors)
     w_scale = reshape_weight_scale_factor(args.w_scale, args.n_layers, args.recurrent)
@@ -99,10 +105,6 @@ def params_initializer( key, args ):
                                            minval=tau_layer*(1-args.distrib_tau_sd), 
                                            maxval=tau_layer*(1+args.distrib_tau_sd)  )
                 tau_l = jnp.clip( tau_l, 1e-10, 10 ) # clipping to avoid too short/long time constant
-                if args.distrib_tau_bittar: tau_l = jax.random.uniform(key_hid[l], 
-                                                                       [args.n_hid], 
-                                                                        minval=args.timestep*5, 
-                                                                        maxval=args.timestep*25 )
             elif args.distrib_tau == 'normal':
                 tau_l = jax.random.normal(key_hid[l], [args.n_hid]) * args.distrib_tau_sd * tau_layer + tau_layer
                 tau_l = jnp.clip( tau_l, 1e-10, 10 ) # clipping to avoid too short/long time constant

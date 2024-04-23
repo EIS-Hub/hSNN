@@ -278,41 +278,129 @@ def custom_collate_fn(batch):
 
   return spikes, labels
 
+# Multi-Time-Scale XOR dataset (MTS_XOR)
+class DatasetNumpy_MTS_XOR(torch.utils.data.Dataset):
+    """
+    Creating a Numpy-based Dataset for the MTS-XOR task.
+    Details on the task here: https://www.nature.com/articles/s41467-023-44614-z
+    """
+    def __init__(self, batch_size=256, n_epochs=150, nb_steps=100, 
+                 channel=2, channel_rate=[0.2, 0.6], 
+                 noise_rate=0.01, channel_size=20,
+                 coding_time=10, remain_time=5, 
+                 start_time=10, verbose=False):
+        self.batch_size = batch_size
+        self.n_epochs = n_epochs
+        self.nb_steps = nb_steps  # number of time steps in the input
+        self.channel = channel
+        self.channel_rate = channel_rate
+        self.noise_rate = noise_rate
+        self.channel_size = channel_size
+        self.coding_time = coding_time
+        self.remain_time = remain_time
+        self.start_time = start_time
+
+        #init xor label
+        self.label = torch.zeros(len(channel_rate),len(channel_rate))
+        self.label[1][0] = 1
+        self.label[0][1] = 1
+
+        # initialize the input (3D) and output (2D) arrays
+        x_train, y_train = [], []
+        for e in range(self.n_epochs):
+            x, y = self.get_batch()
+            x_train.append( x ); y_train.append(y)
+        self.input = np.vstack(x_train).astype(np.int8) 
+        self.output = np.vstack(y_train).astype(np.int8)
+        self.num_samples = self.input.shape[0]
+
+    def __len__(self):
+        return self.num_samples
+
+    def get_batch(self):
+        """Generate the mutlitimescale spiking xor problem batch"""
+        # Build the first sequence
+        values = torch.rand(self.batch_size,self.nb_steps,self.channel_size*2,requires_grad=False) <= self.noise_rate
+        targets = torch.zeros(self.nb_steps,self.batch_size,requires_grad=False).int()
+        #build the signal 1
+        init_pattern = torch.randint(len(self.channel_rate),size=(self.batch_size,))
+        #generate spikes
+        prob_matrix = torch.ones(self.start_time,self.channel_size,self.batch_size)*torch.tensor(self.channel_rate)[init_pattern]
+        add_patterns = torch.bernoulli(prob_matrix).permute(2,0,1).bool()
+        values[:,:self.start_time,:self.channel_size] = values[:,:self.start_time,:self.channel_size] | add_patterns
+        
+        #build the signal 2
+        for i in range((self.nb_steps-self.start_time) //(self.coding_time+self.remain_time)):
+            pattern = torch.randint(len(self.channel_rate),size=(self.batch_size,))
+            label_t = self.label[init_pattern,pattern].int()
+            #generate spikes
+            prob = torch.tensor(self.channel_rate)[pattern]
+            prob_matrix = torch.ones(self.coding_time,self.channel_size,self.batch_size)*prob
+            add_patterns = torch.bernoulli(prob_matrix).permute(2,0,1).bool()
+
+            values[:,self.start_time+i*(self.coding_time+self.remain_time)+self.remain_time:self.start_time+(i+1)*(self.coding_time+self.remain_time),self.channel_size:] = values[:,self.start_time+i*(self.coding_time+self.remain_time)+self.remain_time:self.start_time+(i+1)*(self.coding_time+self.remain_time),self.channel_size:] | add_patterns
+            targets[self.start_time+i*(self.coding_time+self.remain_time):self.start_time+(i+1)*(self.coding_time+self.remain_time)] = label_t
+        return values.detach().numpy(), targets.transpose(0,1).contiguous().detach().numpy()
+
+    def __getitem__(self, idx):
+        inputs, outputs = self.__data_generation(idx)
+        return inputs, outputs
+
+    def __data_generation(self, idx):
+        return self.input[idx], self.output[idx]
+
 def get_dataloader( args, 
                     cache_dir='/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD',
                     # cache_dir='/home/ttorchet/data',
                     download=False,
                     verbose=False):
-    # cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD' # take data from tristan, to avoid copies #os.getcwd()
-    if os.getcwd() == '/home/filippo/hsnn':
-        cache_dir = '/home/filippo/data'
-    elif os.getcwd() == '/Users/filippomoro/Documents/hsnn':
-        cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD'
-    else: cache_dir = cache_dir
-    key = jax.random.PRNGKey(args.seed)
-    key, subkey_perturbation = jax.random.split(key)
-    train_ds, test_ds = get_numpy_datasets(subkey_perturbation, args.pert_proba, args.n_in, 
-                                           cache_dir=cache_dir, download=download,
-                                           dataset_name=args.dataset_name, 
-                                           nb_steps=args.nb_steps, truncation=args.truncation)
     # Set random seeds for reproducibility
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
 
-    # Validation set splitting (if not explicit in dataset)
-    train_ds = train_ds[0]
-    test_ds = test_ds[0]
-    if args.dataset_name == 'ssc':
-        train_ds_split, val_ds_split = train_ds
-    else:
-        train_size = int(0.8 * len(train_ds))
-        val_size   = len(train_ds) - train_size
-        train_ds_split, val_ds_split = random_split(train_ds, [train_size, val_size])
-    if verbose:
-        print(f'Train DL size: {len(train_ds_split)}, Validation DL size: {len(val_ds_split)}, Test DL size: {len(test_ds)}')
+    # selecting KeyWord Spotting tasks
+    if args.dataset_name in ['shd', 'ssc']:
+        # cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD' # take data from tristan, to avoid copies #os.getcwd()
+        if os.getcwd() == '/home/filippo/hsnn':
+            cache_dir = '/home/filippo/data'
+        elif os.getcwd() == '/Users/filippomoro/Documents/hsnn':
+            cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD'
+        else: cache_dir = cache_dir
+        key = jax.random.PRNGKey(args.seed)
+        key, subkey_perturbation = jax.random.split(key)
+        train_ds, test_ds = get_numpy_datasets(subkey_perturbation, args.pert_proba, args.n_in, 
+                                            cache_dir=cache_dir, download=download,
+                                            dataset_name=args.dataset_name, 
+                                            nb_steps=args.nb_steps, truncation=args.truncation)
 
-    train_loader_custom_collate = DataLoader(train_ds_split, args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
-    val_loader_custom_collate   = DataLoader(val_ds_split,   args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
-    test_loader_custom_collate  = DataLoader(test_ds,        args.batch_size, shuffle=None, collate_fn=custom_collate_fn)
-    return train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate
+        # Validation set splitting (if not explicit in dataset)
+        train_ds = train_ds[0]
+        test_ds = test_ds[0]
+        if args.dataset_name == 'ssc':
+            train_ds_split, val_ds_split = train_ds
+        else:
+            train_size = int(0.8 * len(train_ds))
+            val_size   = len(train_ds) - train_size
+            train_ds_split, val_ds_split = random_split(train_ds, [train_size, val_size])
+        if verbose:
+            print(f'Train DL size: {len(train_ds_split)}, Validation DL size: {len(val_ds_split)}, Test DL size: {len(test_ds)}')
+
+        train_loader_custom_collate = DataLoader(train_ds_split, args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
+        val_loader_custom_collate   = DataLoader(val_ds_split,   args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
+        test_loader_custom_collate  = DataLoader(test_ds,        args.batch_size, shuffle=None, collate_fn=custom_collate_fn)
+        return train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate
+    # selecting the MTS-XOR task
+    elif args.dataset_name == 'mts_xor':
+        # get the Dataset
+        train_ds_split = DatasetNumpy_MTS_XOR( n_epochs=20, batch_size=args.batch_size, nb_steps=args.nb_steps )
+        val_ds_split = DatasetNumpy_MTS_XOR( n_epochs=2, batch_size=args.batch_size, nb_steps=args.nb_steps )
+        test_ds = DatasetNumpy_MTS_XOR( n_epochs=2, batch_size=args.batch_size, nb_steps=args.nb_steps )
+
+        train_loader_custom_collate = DataLoader(train_ds_split, args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
+        val_loader_custom_collate   = DataLoader(val_ds_split,   args.batch_size, shuffle=False, collate_fn=custom_collate_fn)
+        test_loader_custom_collate  = DataLoader(test_ds,        args.batch_size, shuffle=None, collate_fn=custom_collate_fn)
+        return train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate
+    else:
+        print('Dataset name does not match any known taks. Please repeat the experiment with new dataset_name')
+        return None, None, None

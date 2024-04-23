@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--recurrent', type=bool, default=False)
     # time constant
     parser.add_argument('--train_alpha', type=bool, default=False)
-    parser.add_argument('--hierarchy_tau', type=bool, default=False)
+    parser.add_argument('--hierarchy_tau', type=str, default=False)
     parser.add_argument('--distrib_tau', type=str, default='uniform')
     parser.add_argument('--distrib_tau_sd', type=float, default=0.2)
     parser.add_argument('--tau_mem', type=float, default=0.1)
@@ -53,6 +53,20 @@ if __name__ == '__main__':
                  freq_lambda = parsed.freq_lambda, dropout = parsed.dropout, recurrent = parsed.recurrent, 
                  verbose = parsed.verbose, save_dir_name=parsed.save_dir_name, dataset_name=parsed.dataset_name
     )
+
+    if args.dataset_name == 'mts_xor':
+        args.n_in = 40
+        args.n_out = 2
+        args.decoder = 'vmem_time'
+        args.time_max = 1.0 # second
+        args.timestep = args.time_max/args.nb_steps # second
+        args.tau_out = 0.05
+        args.distrib_tau_sd = 0.1
+        args.batch_size = 512
+        # args.normalizer = False
+    elif args.dataset_name in ['shd', 'ssc']: pass
+    else: 
+        print('Unknown dataset name. Please select a valid task name')
 
     print('\nTraining')
     train_loss, test_acc, val_acc, net_params_best = train_hsnn( args = args, wandb_flag=False )

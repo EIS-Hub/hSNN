@@ -311,3 +311,8 @@ def decoder_freq( out_v_mem ):
     ''' Decodes the output as the Frequency of the output neurons over time '''
     # out_v_mem dims: [batch, time_steps, out_dim]
     return jax.nn.softmax( jnp.sum( out_v_mem, axis=1 ), axis=-1 )
+
+def decoder_vmem_time( out_v_mem ):
+    ''' Decodes the output as the membrane voltage over time (MTS-XOR) '''
+    # out_v_mem dims: [batch, time_steps, out_dim]
+    return jax.nn.softmax( out_v_mem, axis=-1 )

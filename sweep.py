@@ -82,6 +82,26 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="Num_layers_train_alpha_False")
 
+    ### MTS_XOR: tau_mem
+    elif parsed.sweep_name == 'hsnn_MTS_XOR_tau_mem':
+        print('Starting with the sweep on the Time Constant')
+        config['n_layers'] = {'values':[3,4]}
+        config['seed'] = {'values':[0,1,2,3,4]}
+        config['tau_mem'] = {'values':[0.01, 0.05, 0.1, 0.2, 0.25, 0.3, 0.4, 0.6]}
+        config['dataset_name'] = {'value':'mts_xor'} # Task name!
+        config['n_hid'] = {'values':[10]}
+        config['hierarchy_tau'] = {'value':False}
+        config['n_epochs'] = {'value':60}
+        config['distrib_tau'] = {'value':'uniform'}
+        config['n_in'] = {'value':40}; config['n_out'] = {'value':2}
+        config['decoder'] = {'value':'vmem_time'}; config['time_max'] = {'value':1.0}
+        config['timestep'] = {'value':1./100}; config['time_max'] = {'value':1.0}
+        config['tau_out'] = {'value':0.05}; config['distrib_tau_sd'] = {'value':0.1}
+        config['batch_size'] = {'value':512}
+        config['experiment_name'] = {'value':parsed.sweep_name}
+        sweep_config['parameters'] = config
+        sweep_id = wandb.sweep(sweep_config, project="hsnn")
+
     ### Test
     else:
         config['seed'] = {'values':[0]}
