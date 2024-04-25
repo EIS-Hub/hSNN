@@ -107,10 +107,10 @@ if __name__ == '__main__':
         print('Starting with the sweep on the Delta_Tau (Hierarchy)')
         config['n_layers'] = {'values':[3,4]}
         config['seed'] = {'values':[0,1,2,3,4]}
-        config['delta_tau'] = {'values':[-0.25, -0.2, -0.1, 0.05, 0, 0.05, 0.1, 0.2, 0.25]}
+        config['delta_tau'] = {'values':[-0.05]} #{'values':[-0.25, -0.2, -0.1, -0.05, 0, 0.05, 0.1, 0.2, 0.25]}
         config['dataset_name'] = {'value':'mts_xor'} # Task name!
         config['n_hid'] = {'values':[10]}
-        config['delta_tau'] = {'value':0.3}
+        config['tau_mem'] = {'value':0.3}
         config['hierarchy_tau'] = {'value':'linear'}
         config['n_epochs'] = {'value':60}
         config['distrib_tau'] = {'value':'normal'}
