@@ -57,7 +57,7 @@ def lif_step( args_in, input_spikes ):
     # state: the parameters (weights) and the state of the neurons (spikes, inputs and membrane, ecc..)
     w, alpha = net_params; w_mask, tau, V_mem, out_spikes, v_thr, noise_sd = net_states
     # clip alpha
-    alpha = jnp.clip(alpha, 0+1e-5, 1.0-4e-2)
+    alpha = jnp.clip(alpha, 0+1e-5, 1.0-2e-2)
 
     # V_mem = (alpha) * (V_mem - out_spikes) + (1-alpha) * input_spikes - out_spikes*v_thr
     # V_mem = (alpha) * (V_mem - out_spikes) + I_in #- out_spikes*v_thr
@@ -74,7 +74,7 @@ def rlif_step( args_in, input_spikes ):
     # state: the parameters (weights) and the state of the neurons (spikes, inputs and membrane, ecc..)
     w, alpha = net_params; w_mask, tau, V_mem, out_spikes, v_thr, noise_sd = net_states
     # clip alpha
-    alpha = jnp.clip(alpha, 0+1e-5, 1.0-4e-2)
+    alpha = jnp.clip(alpha, 0+1e-5, 1.0-2e-2)
     win_mask, wrec_mask = w_mask
     if len(w) == 3: # it means that we'll do normalization
         weight, scale, bias = w

@@ -141,7 +141,8 @@ def train_hsnn(args=None, wandb_flag=True):
         avg_spikes_neuron = jnp.mean( jnp.stack( [ jnp.mean( jnp.sum( out_spike_net[l], axis=1 ), axis=(0,-1) ) for l in range( len(net_params)-1 )] ) )
         loss_fr = args.freq_lambda * (args.target_fr - avg_spikes_neuron)**2
         # loss on the decaying factor
-        loss_alpha = optimizers.l2_norm( [jax.nn.relu(net_params[l][1]-1.) for l in range(len(net_params))] ) * 1e-2
+        loss_alpha = optimizers.l2_norm( [jax.nn.relu(net_params[l][1]-1.+5e-2) for l in range(len(net_params))] ) * 1e-1
+        # loss_alpha = optimizers.l2_norm( [jax.nn.sigmoid(net_params[l][1]) for l in range(len(net_params))] ) * 1e-2
         # Total loss
         loss_total = loss_ce + loss_l2 + loss_fr + loss_alpha
         loss_values = [num_correct, loss_ce]

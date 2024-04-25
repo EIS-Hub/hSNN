@@ -3,4 +3,4 @@ results/
 wandb/
 __pycache__/
 debug.py
-#plotting.ipynb
+plotting.ipynb
