@@ -40,7 +40,8 @@ class SimArgs:
         self.distrib_tau_bittar = False
         self.distrib_tau_sd = distrib_tau_sd # standard dev of the time constant distribution
         self.hierarchy_tau = hierarchy_tau # enables hierarchy of time constants
-        self.tanh_coef = 0.1
+        self.tanh_coef = 1.
+        self.tanh_center = 0.5 # sets the "zero" (reference) for the tanh function scaling the time constant
         self.train_alpha = train_tau # enables training the time constant
         self.normalizer = normalizer # selects the normalization layer
         self.norm_bias_init = 0.0 
@@ -73,10 +74,13 @@ def params_initializer( key, args ):
     # initialize the time constants
     if args.hierarchy_tau == 'tanh':
         tanh = lambda x, a: (np.exp(2*x/a)-1)/(np.exp(2*x/a)+1)
-        tau_layer_list = args.tau_mem + tanh( (np.linspace(0,1,args.n_layers-1)-0.5), args.tanh_coef ) * args.delta_tau
+        rescale = lambda x: ( x - np.min(x) ) / (np.max( np.abs( x - np.min(x) ) )) - 0.5
+        hierarchy = tanh( (np.linspace(0,1,args.n_layers-1)-args.tanh_center), args.tanh_coef )
+        scaled_hierarchy = rescale( hierarchy ) * args.delta_tau
+        tau_layer_list = args.tau_mem + scaled_hierarchy
     elif args.hierarchy_tau == 'linear':
-        tau_start = np.clip(args.tau_mem - args.delta_tau, 0, None) # [second] input time constant
-        tau_end   = np.clip(args.tau_mem + args.delta_tau, 0, None) # [second] output time constant
+        tau_start = np.clip(args.tau_mem - args.delta_tau * 0.5, 0, None) # [second] input time constant
+        tau_end   = np.clip(args.tau_mem + args.delta_tau * 0.5, 0, None) # [second] output time constant
         tau_layer_list = jnp.linspace( tau_start, tau_end, args.n_layers-1 )
     else: 
         tau_layer_list = jnp.ones( args.n_layers-1 )*args.tau_mem

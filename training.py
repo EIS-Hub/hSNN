@@ -258,7 +258,7 @@ def train_hsnn(args=None, wandb_flag=True):
         _, net_states = params_initializer(key=key_epoch, args=args)
         count += x.shape[0]
         acc += total_correct(net_params_best, net_states, x, y)
-    if args.dataset_name == 'mts_xor': count = count*args.nb_steps
+    # if args.dataset_name == 'mts_xor': count = count*args.nb_steps
     val_acc = 100*acc/(batch_idx+1) #/count
     print(f'Validation Accuracy: {val_acc:.2f}')
 
@@ -268,7 +268,7 @@ def train_hsnn(args=None, wandb_flag=True):
     for batch_idx, (x, y) in enumerate(test_dl):
         count += x.shape[0]
         acc += total_correct(net_params_best, net_states, x, y)
-    if args.dataset_name == 'mts_xor': count = count*args.nb_steps
+    # if args.dataset_name == 'mts_xor': count = count*args.nb_steps
     test_acc = 100*acc/(batch_idx+1) #/count
     print(f'Test Accuracy: {test_acc:.2f}')
     if wandb_flag: wandb.log({'Test Acc': test_acc})

@@ -11,7 +11,7 @@ from utils_initialization import SimArgs, params_initializer
 from training import train_hsnn
 
 os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".75" # needed because network is huge
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 jax.devices()
 
 
@@ -42,9 +42,24 @@ if __name__ == '__main__':
     for i, [key, value] in enumerate( zip( args.__dict__.keys(), args.__dict__.values()  ) ):
         config[key] = {'value': value}
     # update the parameters to sweep
+
+    ### Hierarchy shape
+    if parsed.sweep_name == 'Hierarchy_shape_SHD':
+        print('Starting with the sweep on Hierarchy function')
+        config['tanh_coef'] = {'values':[0.1, 0.25, 0.5, 1.]}
+        config['tanh_center'] = {'values':[0, 0.25, 0.5, 0.75, 1]}
+        config['seed'] = {'values':[0, 1, 2, 3, 4]} # [0, 1, 2, 3, 4] [5,6,7,8,9]
+        config['hierarchy_tau'] = {'value':'tanh'}
+        config['delta_tau'] = {'value':0.015}
+        config['n_epochs'] = {'value':60}
+        config['n_layers'] = {'value':6}
+        config['n_hid'] = {'value':32}
+        config['experiment_name'] = {'value':parsed.sweep_name}
+        sweep_config['parameters'] = config
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
         
     ### Delta_tau_train_alpha_False
-    if parsed.sweep_name == 'Delta_tau_train_alpha_False':
+    elif parsed.sweep_name == 'Delta_tau_train_alpha_False':
         print('Starting with the sweep on Delta Tau (hierarchy)')
         config['delta_tau'] = {'values':[-0.075, -0.05, -0.025, 0, 0.025, 0.05, 0.075, 0.09]} # [-0.075, -0.05, -0.025, 0, 0.025, 0.05, 0.075]
         config['seed'] = {'values':[3,4]} # [0, 1, 2, 3, 4] [5,6,7,8,9]
@@ -106,8 +121,8 @@ if __name__ == '__main__':
     elif parsed.sweep_name == 'hsnn_MTS_XOR_delta_tau':
         print('Starting with the sweep on the Delta_Tau (Hierarchy)')
         config['n_layers'] = {'values':[3,4]}
-        config['seed'] = {'values':[0,1,2,3,4]}
-        config['delta_tau'] = {'values':[-0.05]} #{'values':[-0.25, -0.2, -0.1, -0.05, 0, 0.05, 0.1, 0.2, 0.25]}
+        config['seed'] = {'values':[5,6,7,8,9]} # 0,1,2,3,4
+        config['delta_tau'] = {'values':[-0.25, -0.2, -0.1, -0.05, 0, 0.05, 0.1, 0.2, 0.25]}
         config['dataset_name'] = {'value':'mts_xor'} # Task name!
         config['n_hid'] = {'values':[10]}
         config['tau_mem'] = {'value':0.3}
@@ -125,6 +140,7 @@ if __name__ == '__main__':
 
     ### Test
     else:
+        print('Invalid sweep name')
         config['seed'] = {'values':[0]}
         config['n_epochs'] = {'value':2}
         config['n_layers'] = {'value':3}

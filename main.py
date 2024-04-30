@@ -11,7 +11,7 @@ from utils_initialization import SimArgs, params_initializer
 from training import train_hsnn
 
 os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".5" # needed because network is huge
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 jax.devices()
 
 if __name__ == '__main__':
@@ -57,6 +57,7 @@ if __name__ == '__main__':
     if args.dataset_name == 'mts_xor':
         args.n_in = 40
         args.n_out = 2
+        args.n_hid = 10
         args.decoder = 'vmem_time'
         args.time_max = 1.0 # second
         args.timestep = args.time_max/args.nb_steps # second
