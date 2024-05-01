@@ -48,13 +48,14 @@ if __name__ == '__main__':
         print('Starting with the sweep on Hierarchy function')
         config['tanh_coef'] = {'values':[0.1, 0.25, 0.5, 1.]}
         config['tanh_center'] = {'values':[0, 0.25, 0.5, 0.75, 1]}
-        config['seed'] = {'values':[0, 1, 2, 3, 4]} # [0, 1, 2, 3, 4] [5,6,7,8,9]
+        config['seed'] = {'values':[0, 1, 2]} # [0, 1, 2, 3, 4] [5,6,7,8,9]
+        config['tau_mem'] = {'value':[0.1]}
         config['hierarchy_tau'] = {'value':'tanh'}
-        config['delta_tau'] = {'value':0.015}
+        config['delta_tau'] = {'value':0.15}
         config['n_epochs'] = {'value':60}
         config['n_layers'] = {'value':6}
-        config['n_hid'] = {'value':32}
-        config['experiment_name'] = {'value':parsed.sweep_name}
+        config['n_hid'] = {'value':16}
+        config['experiment_name'] = {'value':parsed.sweep_name} # {'value':'test_tau_mem'} #
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
         
