@@ -11,7 +11,7 @@ from utils_initialization import SimArgs, params_initializer
 from training import train_hsnn
 
 os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".75" # needed because network is huge
-os.environ["CUDA_VISIBLE_DEVICES"]="2"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 jax.devices()
 
 
@@ -46,15 +46,15 @@ if __name__ == '__main__':
     ### Hierarchy shape
     if parsed.sweep_name == 'Hierarchy_shape_SHD':
         print('Starting with the sweep on Hierarchy function')
-        config['tanh_coef'] = {'values':[0.1, 0.25, 0.5, 1.]}
-        config['tanh_center'] = {'values':[0, 0.25, 0.5, 0.75, 1]}
-        config['seed'] = {'values':[0, 1, 2]} # [0, 1, 2, 3, 4] [5,6,7,8,9]
+        config['tanh_coef'] = {'values':[0.5, 1.]} #{'values':[0.1, 0.25, 0.5, 1.]}
+        config['tanh_center'] = {'values':[1]} #{'values':[0, 0.25, 0.5, 0.75, 1]}
+        config['seed'] = {'values':[1]} # [0, 1, 2, 3, 4] [5,6,7,8,9]
         config['tau_mem'] = {'value':[0.1]}
         config['hierarchy_tau'] = {'value':'tanh'}
         config['delta_tau'] = {'value':0.15}
         config['n_epochs'] = {'value':60}
         config['n_layers'] = {'value':6}
-        config['n_hid'] = {'value':16}
+        config['n_hid'] = {'value':32}
         config['experiment_name'] = {'value':parsed.sweep_name} # {'value':'test_tau_mem'} #
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
