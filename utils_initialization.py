@@ -40,7 +40,7 @@ class SimArgs:
         self.distrib_tau_bittar = False
         self.distrib_tau_sd = distrib_tau_sd # standard dev of the time constant distribution
         self.hierarchy_tau = hierarchy_tau # enables hierarchy of time constants
-        self.tanh_coef = 1.
+        self.tanh_coef = 0.5 # sets the steepness of the tanh function through the hidden layers
         self.tanh_center = 0.5 # sets the "zero" (reference) for the tanh function scaling the time constant
         self.train_alpha = train_tau # enables training the time constant
         self.normalizer = normalizer # selects the normalization layer

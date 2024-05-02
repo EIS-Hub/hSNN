@@ -46,10 +46,10 @@ if __name__ == '__main__':
     ### Hierarchy shape
     if parsed.sweep_name == 'Hierarchy_shape_SHD':
         print('Starting with the sweep on Hierarchy function')
-        config['tanh_coef'] = {'values':[0.5, 1.]} #{'values':[0.1, 0.25, 0.5, 1.]}
-        config['tanh_center'] = {'values':[1]} #{'values':[0, 0.25, 0.5, 0.75, 1]}
-        config['seed'] = {'values':[1]} # [0, 1, 2, 3, 4] [5,6,7,8,9]
-        config['tau_mem'] = {'value':[0.1]}
+        config['tanh_coef'] = {'values':[0.1, 0.25, 0.5, 1.]}
+        config['tanh_center'] = {'values':[0, 0.25, 0.5, 0.75, 1]}
+        config['seed'] = {'values':[0, 1, 2, 3, 4]} # [0, 1, 2, 3, 4] [5,6,7,8,9]
+        config['tau_mem'] = {'value':0.1}
         config['hierarchy_tau'] = {'value':'tanh'}
         config['delta_tau'] = {'value':0.15}
         config['n_epochs'] = {'value':60}
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         config['hierarchy_tau'] = {'value':True}
         config['recurrent'] = {'value':False} ### ----> be careful here!
         sweep_config['parameters'] = config
-        sweep_id = wandb.sweep(sweep_config, project="Delta_tau_train_alpha_False")
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
     ### Tau_mem_train_alpha_False
     elif parsed.sweep_name == 'Tau_mem_train_alpha_False':
@@ -83,7 +83,7 @@ if __name__ == '__main__':
         config['n_epochs'] = {'value':60}
         config['n_layers'] = {'value':4}
         sweep_config['parameters'] = config
-        sweep_id = wandb.sweep(sweep_config, project="Tau_mem_train_alpha_False")
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
     ### Num_Layers
     elif parsed.sweep_name == 'Num_layers_train_alpha_False':
@@ -96,10 +96,10 @@ if __name__ == '__main__':
         config['delta_tau'] = {'value':0.075}
         config['distrib_tau'] = {'value':'uniform'}
         sweep_config['parameters'] = config
-        sweep_id = wandb.sweep(sweep_config, project="Num_layers_train_alpha_False")
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
     ### MTS_XOR: tau_mem
-    elif parsed.sweep_name == 'hsnn_MTS_XOR_tau_mem':
+    elif parsed.sweep_name == 'MTS_XOR_tau_mem':
         print('Starting with the sweep on the Time Constant')
         config['n_layers'] = {'values':[3,4]}
         config['seed'] = {'values':[0,1,2,3,4]}
@@ -116,18 +116,18 @@ if __name__ == '__main__':
         config['batch_size'] = {'value':512}
         config['experiment_name'] = {'value':parsed.sweep_name}
         sweep_config['parameters'] = config
-        sweep_id = wandb.sweep(sweep_config, project="hsnn")
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
     ### MTS_XOR: delta_tau
-    elif parsed.sweep_name == 'hsnn_MTS_XOR_delta_tau':
+    elif parsed.sweep_name == 'MTS_XOR_delta_tau':
         print('Starting with the sweep on the Delta_Tau (Hierarchy)')
         config['n_layers'] = {'values':[3,4]}
         config['seed'] = {'values':[5,6,7,8,9]} # 0,1,2,3,4
-        config['delta_tau'] = {'values':[-0.25, -0.2, -0.1, -0.05, 0, 0.05, 0.1, 0.2, 0.25]}
+        config['delta_tau'] = {'values':[-0.5, -0.4, -0.2, -0.1, 0, 0.1, 0.2, 0.4, 0.5]}
         config['dataset_name'] = {'value':'mts_xor'} # Task name!
-        config['n_hid'] = {'values':[10]}
+        config['n_hid'] = {'value':10}
         config['tau_mem'] = {'value':0.3}
-        config['hierarchy_tau'] = {'value':'linear'}
+        config['hierarchy_tau'] = {'value':'tanh'}
         config['n_epochs'] = {'value':60}
         config['distrib_tau'] = {'value':'normal'}
         config['n_in'] = {'value':40}; config['n_out'] = {'value':2}
@@ -137,7 +137,7 @@ if __name__ == '__main__':
         config['batch_size'] = {'value':512}
         config['experiment_name'] = {'value':parsed.sweep_name}
         sweep_config['parameters'] = config
-        sweep_id = wandb.sweep(sweep_config, project="hsnn")
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
     ### Test
     else:
