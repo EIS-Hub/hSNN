@@ -11,7 +11,7 @@ from utils_initialization import SimArgs, params_initializer
 from training import train_hsnn
 
 os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".75" # needed because network is huge
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 jax.devices()
 
 
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         print('Starting with the sweep on Hierarchy function')
         config['tanh_coef'] = {'values':[0.1, 0.25, 0.5, 1.]}
         config['tanh_center'] = {'values':[0, 0.25, 0.5, 0.75, 1]}
-        config['seed'] = {'values':[0, 1, 2, 3, 4]} # [0, 1, 2, 3, 4] [5,6,7,8,9]
+        config['seed'] = {'values':[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
         config['tau_mem'] = {'value':0.1}
         config['hierarchy_tau'] = {'value':'tanh'}
         config['delta_tau'] = {'value':0.15}
@@ -60,16 +60,17 @@ if __name__ == '__main__':
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
         
     ### Delta_tau_train_alpha_False
-    elif parsed.sweep_name == 'Delta_tau_train_alpha_False':
+    elif parsed.sweep_name == 'SHD_Delta_tau':
         print('Starting with the sweep on Delta Tau (hierarchy)')
-        config['delta_tau'] = {'values':[-0.075, -0.05, -0.025, 0, 0.025, 0.05, 0.075, 0.09]} # [-0.075, -0.05, -0.025, 0, 0.025, 0.05, 0.075]
-        config['seed'] = {'values':[3,4]} # [0, 1, 2, 3, 4] [5,6,7,8,9]
+        config['delta_tau'] = {'values':[0.1, 0.15, 0.18]} #{'values':[-0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15, 0.18]}
+        config['seed'] = {'values':[0, 1, 2, 3, 4] } # [0, 1, 2, 3, 4] [5,6,7,8,9]
         config['n_epochs'] = {'value':60}
-        config['n_layers'] = {'value':3}
+        config['n_layers'] = {'value':6}
+        config['tau_mem'] = {'value':0.1}
+        config['n_hid'] = {'value':32}
         config['train_alpha'] = {'value':False}
-        config['distrib_tau'] = {'value':'unif'}
-        config['hierarchy_tau'] = {'value':True}
-        config['recurrent'] = {'value':False} ### ----> be careful here!
+        config['hierarchy_tau'] = {'value':'tanh'}
+        config['recurrent'] = {'value':True} ### ----> be careful here!
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
