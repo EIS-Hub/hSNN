@@ -87,14 +87,14 @@ if __name__ == '__main__':
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
     ### Num_Layers
-    elif parsed.sweep_name == 'Num_layers_train_alpha_False':
+    elif parsed.sweep_name == 'SHD_Num_layers':
         print('Starting with the sweep on the Time Constant')
-        config['n_layers'] = {'values':[3,4,5]}
-        config['n_hid'] = {'values':[256]}
-        config['seed'] = {'values':[0,1,2]} # [0, 1, 2]
-        config['hierarchy_tau'] = {'values':[True, False]}
+        config['n_layers'] = {'values':[3,4,5,6]}
+        config['n_hid'] = {'values':[32,64,128]}
+        config['seed'] = {'values':[0,1,2,3,4,5]} # [0, 1, 2]
+        config['hierarchy_tau'] = {'value':'tanh'}
         config['n_epochs'] = {'value':60}
-        config['delta_tau'] = {'value':0.075}
+        config['delta_tau'] = {'values':[0, 0.15]}
         config['distrib_tau'] = {'value':'uniform'}
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
@@ -123,7 +123,7 @@ if __name__ == '__main__':
     elif parsed.sweep_name == 'MTS_XOR_delta_tau':
         print('Starting with the sweep on the Delta_Tau (Hierarchy)')
         config['n_layers'] = {'values':[3,4]}
-        config['seed'] = {'values':[5,6,7,8,9]} # 0,1,2,3,4
+        config['seed'] = {'values':[0,1,2,3,4,5,6,7,8,9]}
         config['delta_tau'] = {'values':[-0.5, -0.4, -0.2, -0.1, 0, 0.1, 0.2, 0.4, 0.5]}
         config['dataset_name'] = {'value':'mts_xor'} # Task name!
         config['n_hid'] = {'value':10}
