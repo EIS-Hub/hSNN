@@ -8,7 +8,7 @@ class SimArgs:
                  train_tau=False, hierarchy_tau=False, distrib_tau='uniform',
                  distrib_tau_sd=0.2, tau_mem=0.1, delta_tau=0.075,
                  noise_sd=0.1, n_epochs=5, l2_lambda=0,
-                 freq_lambda=0, dropout=0.1, recurrent=False, 
+                 freq_lambda=0, dropout=0.1, recurrent=False, convolution=False,
                  verbose=True, save_dir_name=None, dataset_name = 'shd'):
         # architecture
         self.dataset_name = dataset_name
@@ -36,8 +36,9 @@ class SimArgs:
         self.surrogate_fn = 'box' # type of surrogate gradient
         self.decoder = decoder # output decoding strategy
         self.recurrent = recurrent # enables recurrent connections
+        self.convolution = convolution
+        self.conv_kernels = [12]*self.n_layers
         self.distrib_tau = distrib_tau # enables individual time constant per neuron
-        self.distrib_tau_bittar = False
         self.distrib_tau_sd = distrib_tau_sd # standard dev of the time constant distribution
         self.hierarchy_tau = hierarchy_tau # enables hierarchy of time constants
         self.tanh_coef = 0.5 # sets the steepness of the tanh function through the hidden layers
@@ -120,7 +121,10 @@ def params_initializer( key, args ):
         # initializing the hidden weights with a normal distribution
         if not args.recurrent: w_scale_ff = w_scale[l]
         else: w_scale_ff = w_scale[l][0]
-        weight_l = jax.random.uniform(key_hid[l], [n_pre, n_post], minval=-w_scale_ff, maxval=w_scale_ff)
+        if args.convolution:
+                weight_l = jax.random.uniform(key_hid[l], [args.conv_kernels[l], n_pre, n_post], minval=-w_scale_ff, maxval=w_scale_ff)
+        else:
+            weight_l = jax.random.uniform(key_hid[l], [n_pre, n_post], minval=-w_scale_ff, maxval=w_scale_ff)
         # weight_l = jax.random.normal(key_hid[l], [n_pre, n_post]) * w_scale_ff
         weight_mask_l = 1 # jax.random.uniform(key_hid[l], [n_pre, n_post]) < (1/args.n_layers)
         if args.recurrent and l!=args.n_layers-1 : 

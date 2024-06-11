@@ -13,7 +13,7 @@ from jax.example_libraries import optimizers
 from utils_dataset import get_dataloader
 from utils_initialization import params_initializer
 from utils_normalization import LayerNorm, BatchNorm
-from models import lif_step, rlif_step, li_step, dropout
+from models import lif_step, rlif_step, li_step, dropout, Conv1D_causal
 from models import decoder_cum, decoder_freq, decoder_sum, decoder_vlast, decoder_vmax, decoder_vmem_time
 
 
@@ -62,7 +62,9 @@ def train_hsnn(args=None, wandb_flag=True):
             else: weight = w
             if len(weight) ==2: weight, _ = weight
             # Multiplying the weights by the spikes
-            I_in = jnp.matmul(layer_input_spike, weight)
+            if len( weight.shape ) == 3: I_in = Conv1D_causal(layer_input_spike, weight)
+            else: I_in = jnp.matmul(layer_input_spike, weight)
+
             # Normalization (if selected)
             if len(w) == 3: # it means that we'll do normalization
                 b, t, n = I_in.shape

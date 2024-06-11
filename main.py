@@ -25,6 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--normalizer', type=str, default='batch')
     parser.add_argument('--decoder', type=str, default='cum')
     parser.add_argument('--recurrent', type=bool, default=False)
+    parser.add_argument('--convolution', type=bool, default=False)
     # time constant
     parser.add_argument('--train_alpha', type=bool, default=False)
     parser.add_argument('--hierarchy_tau', type=str, default=False)
@@ -51,7 +52,8 @@ if __name__ == '__main__':
                  distrib_tau_sd = parsed.distrib_tau_sd, tau_mem = parsed.tau_mem, delta_tau = parsed.delta_tau,
                  noise_sd = parsed.noise_sd, n_epochs = parsed.n_epochs, l2_lambda = parsed.l2_lambda, 
                  freq_lambda = parsed.freq_lambda, dropout = parsed.dropout, recurrent = parsed.recurrent, 
-                 verbose = parsed.verbose, save_dir_name=parsed.save_dir_name, dataset_name=parsed.dataset_name
+                 verbose = parsed.verbose, save_dir_name=parsed.save_dir_name, dataset_name=parsed.dataset_name,
+                 convolution= parsed.convolution
     )
 
     if args.dataset_name == 'mts_xor':

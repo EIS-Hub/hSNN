@@ -105,6 +105,25 @@ def li_step(args_in, input_spikes):
     
     return [ [w, alpha], [w_mask, tau, V_mem, out_spikes, v_thr, noise_sd] ], V_mem
 
+# 1D Causal Convolution (Delays)
+def Conv1D_causal( x, weight ):
+    '''1D Convolution using jax.lax.conv_general_dilated
+    from https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv_general_dilated.html
+    x: the input data              [Batch, Length (height), Channels]
+    weight: the convolution filter [Kernel size (height), Input channels, Output channels]
+        (note: both inputs should be in jnp.float32 type)
+    As this is a convolution Causal (only the past influences the future) the input is padded in 
+    the left part (beginning) of the input sequence by the same size of the kernel.
+    '''
+    # turn inputs to the right data-type
+    x = x.astype( jnp.float32 )
+    # padding for making Conv1D causal
+    pad_size = weight.shape[0]
+    x = jnp.pad( x, pad_width=((0,0),(pad_size-1,0),(0,0)), constant_values=0. )
+    # dimention number --> ordering the data for the convolution
+    dims=("NHC", "HIO", "NHC")
+    return jax.lax.conv_general_dilated( lhs=x, rhs=weight, window_strides=[1], padding='valid', dimension_numbers=dims )
+
 # # selecting the correct layer to parallelize
 # if args.recurrent: 
 #     layer = rlif_step
