@@ -10,7 +10,7 @@ from jax import jit, value_and_grad, vmap
 from jax.example_libraries import optimizers
 
 # imports from supporting files
-from utils_dataset import get_dataloader
+from utils_dataset import get_dataloader, frequency_shift
 from utils_initialization import params_initializer
 from utils_normalization import LayerNorm, BatchNorm
 from models import lif_step, rlif_step, li_step, dropout, Conv1D_causal
@@ -27,6 +27,11 @@ def train_hsnn(args=None, wandb_flag=True):
     
     # load dataloader
     train_dl, val_dl, test_dl = get_dataloader( args=args, verbose=True )
+    if args.use_test_as_valid:
+        # be very careful. This flag selects the training set as the validation set. 
+        # It's a really bad practise, but it has unfortunately become standard in SHD...
+        # see Bittar 2022, or Hammouamri 2022...
+        val_dl = test_dl
     
     # Layer and Layer out could be different in general (output might not be spiking)
     # so the two following function scan the lyers and jit for speed
@@ -49,6 +54,9 @@ def train_hsnn(args=None, wandb_flag=True):
         n_layers = len( net_params )                        # number of layers
         # collection of output spikes
         out_spike_net = [] # collects the spikes from each layer
+        dilation_lay = [5, 5, 5]
+        # _, _, _, _, _, dilation_lay = net_states[0]
+        # dilation_lay = jnp.asarray( dilation_lay )
         # Loop over the layers
         for l in range(n_layers):
             # selecting the right input (from the previous layer)
@@ -56,13 +64,13 @@ def train_hsnn(args=None, wandb_flag=True):
             else: layer_input_spike = out_spikes_layer
             # making layers' params and states explitic
             # parameters (weights and alpha) and the state of the neurons (spikes, inputs and membrane, ecc..)
-            w, alpha = net_params[l]; w_mask, tau, V_mem, out_spikes, v_thr, noise_sd = net_states[l]
+            w, alpha = net_params[l]; w_mask, tau, V_mem, out_spikes, v_thr, dilation_layers = net_states[l]
             if len(w) == 3: # it means that we'll do normalization
                 weight, scale, bias = w
             else: weight = w
             if len(weight) ==2: weight, _ = weight
             # Multiplying the weights by the spikes
-            if len( weight.shape ) == 3: I_in = Conv1D_causal(layer_input_spike, weight)
+            if len( weight.shape ) == 3 and l!=(n_layers-1): I_in = Conv1D_causal(layer_input_spike, weight, dilation=dilation_lay[l]) #(l+1)*5 dilation_lay[l]
             else: I_in = jnp.matmul(layer_input_spike, weight)
 
             # Normalization (if selected)
@@ -214,6 +222,8 @@ def train_hsnn(args=None, wandb_flag=True):
         t = time.time()
         acc = 0; count = 0
         for batch_idx, (x, y) in enumerate(train_dl):
+            # make a frequency shift if selected
+            if args.freq_shift != 0: x = frequency_shift( x, args.freq_shift )
             y = one_hot(y, args.n_out)
             key, key_epoch = jax.random.split(key)
             _, net_states = params_initializer(key=key_epoch, args=args)

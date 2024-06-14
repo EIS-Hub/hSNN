@@ -24,8 +24,10 @@ class SimArgs:
         self.nb_steps = 100 # number of time steps of the input
         self.time_max = 1.4 # second
         self.timestep = self.time_max/self.nb_steps # second
+        # input data agumentation
         self.pert_proba = None # data augmentation
         self.truncation = False # to use only 150 of 280 timesteps
+        self.freq_shift = 0
         # neuron model
         self.tau_mem = tau_mem # [second], membrane voltage time constant
         self.tau_out = 0.2 # [second], membrane voltage time constant (output neurons)
@@ -37,7 +39,10 @@ class SimArgs:
         self.decoder = decoder # output decoding strategy
         self.recurrent = recurrent # enables recurrent connections
         self.convolution = convolution
-        self.conv_kernels = [12]*self.n_layers
+        self.conv_kernel = 5 #[5,5,5,8]  #[5]*self.n_layers
+        self.conv_dilation = 5 #[4]*self.n_layers
+        self.hierarchy_conv = False
+        self.delta_conv = 2
         self.distrib_tau = distrib_tau # enables individual time constant per neuron
         self.distrib_tau_sd = distrib_tau_sd # standard dev of the time constant distribution
         self.hierarchy_tau = hierarchy_tau # enables hierarchy of time constants
@@ -53,14 +58,17 @@ class SimArgs:
         self.batch_size = 256 # batch size
         self.seed = seed # seed, for reproducibility
         self.lr_config = 2 
-        self.lr_decay = 0.75 # learning rate decay
-        self.lr_decay_every = 10
+        self.lr_decay = 0.5 #0.75 # learning rate decay
+        self.lr_decay_every = 5 #10
         self.lr_start_decay = 25
         self.l2_lambda = l2_lambda
         self.freq_lambda = freq_lambda
         self.target_fr = 12.
         self.dropout_rate = dropout
         self.verbose = verbose
+        self.use_test_as_valid = False # be very careful. This flag selects the training set as the validation set. 
+                                       # It's a really bad practise, but it has unfortunately become standard in SHD...
+                                       # see Bittar 2022, or Masquelier 2022...
         # saving options
         self.save_dir_name = save_dir_name
         self.wandb = True
@@ -85,6 +93,41 @@ def params_initializer( key, args ):
         tau_layer_list = jnp.linspace( tau_start, tau_end, args.n_layers-1 )
     else: 
         tau_layer_list = jnp.ones( args.n_layers-1 )*args.tau_mem
+    
+    # Hierarchy on the convolution
+    if args.hierarchy_conv == 'dilation':
+        # dilations
+        dil_start = np.clip( int( args.conv_dilation - args.delta_dil * 0.5 ), 1, None) # initial layer dilation
+        dil_end = np.clip( int( args.conv_dilation + args.delta_dil * 0.5 ), 1, None) # final layer dilation
+        dil_layer_list = np.linspace( dil_start, dil_end, args.n_layers-2 ).astype(int)
+        dil_layer_list = np.pad( dil_layer_list, (0, 2), constant_values=args.conv_dilation )
+        # kernels
+        args.conv_kernels = np.ones( args.n_layers ).astype(int)*args.conv_kernel
+    elif args.hierarchy_conv == 'kernel': 
+        # kernels
+        ker_start = np.clip( int( args.conv_kernel - args.delta_conv * 0.5 ), 1, None) # initial layer dilation
+        ker_end = np.clip( int( args.conv_kernel + args.delta_conv * 0.5 ), 1, None) # final layer dilation
+        ker_layer_list = np.linspace( ker_start, ker_end, args.n_layers-2 ).astype(int)
+        ker_layer_list = np.pad( ker_layer_list, (0, 2), constant_values=args.conv_kernel )
+        args.conv_kernels = ker_layer_list
+        # dilations
+        dil_layer_list = np.ones( args.n_layers ).astype(int)*args.conv_dilation
+    elif args.hierarchy_conv == 'both':
+        # kernels
+        ker_start = np.clip( int( args.conv_kernel - args.delta_conv * 0.5 ), 1, None) # initial layer dilation
+        ker_end = np.clip( int( args.conv_kernel + args.delta_conv * 0.5 ), 1, None) # final layer dilation
+        ker_layer_list = np.linspace( ker_start, ker_end, args.n_layers-2 ).astype(int)
+        ker_layer_list = np.pad( dil_layer_list, (0, 2), constant_values=args.conv_kernel )
+        args.conv_kernels = ker_layer_list
+        # dilations
+        dil_start = np.clip( int( args.conv_dilation - args.delta_conv * 0.5 ), 1, None) # initial layer dilation
+        dil_end = np.clip( int( args.conv_dilation + args.delta_conv * 0.5 ), 1, None) # final layer dilation
+        dil_layer_list = np.linspace( dil_start, dil_end, args.n_layers-2 ).astype(int)
+        dil_layer_list = np.pad( dil_layer_list, (0, 2), constant_values=args.conv_dilation )
+    else:
+        args.conv_kernels = np.ones( args.n_layers ).astype(int)*args.conv_kernel
+        dil_layer_list = np.ones( args.n_layers ).astype(int)*args.conv_dilation
+    args.conv_kernels = list( args.conv_kernels ); dil_layer_list = list(dil_layer_list)
 
     # Initializing the weights, weight masks and time constant (alpha factors)
     w_scale = reshape_weight_scale_factor(args.w_scale, args.n_layers, args.recurrent)
@@ -121,8 +164,10 @@ def params_initializer( key, args ):
         # initializing the hidden weights with a normal distribution
         if not args.recurrent: w_scale_ff = w_scale[l]
         else: w_scale_ff = w_scale[l][0]
-        if args.convolution:
-                weight_l = jax.random.uniform(key_hid[l], [args.conv_kernels[l], n_pre, n_post], minval=-w_scale_ff, maxval=w_scale_ff)
+        if args.convolution and l!=(args.n_layers-1):
+                weight_l = jax.random.uniform(key_hid[l], [args.conv_kernels[l], n_pre, n_post], 
+                                              minval=-w_scale_ff/(0.5*np.sqrt(args.conv_kernels[l])), 
+                                              maxval=w_scale_ff/(0.5*np.sqrt(args.conv_kernels[l])))
         else:
             weight_l = jax.random.uniform(key_hid[l], [n_pre, n_post], minval=-w_scale_ff, maxval=w_scale_ff)
         # weight_l = jax.random.normal(key_hid[l], [n_pre, n_post]) * w_scale_ff
@@ -146,7 +191,7 @@ def params_initializer( key, args ):
 
         # building the parameters for each layer
         net_params.append( [weight_l, alpha_l] )
-        net_states.append( [weight_mask_l, tau_l, v_mems, out_spikes, args.v_thr, args.noise_sd] )
+        net_states.append( [weight_mask_l, tau_l, v_mems, out_spikes, args.v_thr, dil_layer_list[l]] )
 
     return net_params, net_states
 

@@ -55,7 +55,7 @@ def get_and_gunzip(origin, filename, md5hash=None, cache_dir=None,
             shutil.copyfileobj(f_in, f_out)
     return hdf5_file_path
 
-def get_numpy_datasets(subkey_perturbation, pert_proba, n_inp, cache_dir, nb_steps, dataset_name='shd', download=False, truncation=False):
+def get_numpy_datasets(subkey_perturbation, pert_proba, n_inp, cache_dir, nb_steps, freq_shift=0, dataset_name='shd', download=False, truncation=False):
     cache_subdir = f"audiospikes"
     if download:
         get_audio_dataset(cache_dir, cache_subdir, dataset_name)
@@ -73,7 +73,7 @@ def get_numpy_datasets(subkey_perturbation, pert_proba, n_inp, cache_dir, nb_ste
                                     name=dataset_name, target_dim=n_inp, nb_rep=1,
                                     nb_steps=nb_steps, pert_proba=pert_proba, 
                                     subkey_perturbation=subkey_perturbation, 
-                                    truncation=truncation) 
+                                    truncation=truncation, freq_shift=freq_shift) 
         _test_ds  = DatasetNumpy(test_file['spikes'],
                                     test_file['labels'],
                                     name=dataset_name, target_dim=n_inp, nb_rep=1, ################################################ nb_rep
@@ -98,16 +98,23 @@ class DatasetNumpy(torch.utils.data.Dataset):
     """
     Numpy based generator
     """
-    def __init__(self, spikes, labels, name, target_dim, nb_rep, nb_steps, pert_proba=None, subkey_perturbation=None, truncation=False, verbose=False):
+    def __init__(self, spikes, labels, name, target_dim, nb_rep, nb_steps, freq_shift=0, pert_proba=None, subkey_perturbation=None, truncation=False, verbose=False):
         if verbose: print(pert_proba, subkey_perturbation)
-        self.nb_steps = nb_steps #int(1.4/timestep)   # number of time steps in the input ################################################ nb_steps
+        self.nb_steps = nb_steps # number of time steps in the input
         # print(f'nb_step: {self.nb_steps} (DatasetNumpyModified.__init__)')
         self.nb_units = 700   # number of input units (channels)
         self.max_time = 1.4   # maximum recording time of a digit (in s)
         self.spikes = spikes  # recover the 'spikes' dictionary from the h5 file
         self.labels = labels  # recover the 'labels' array from the h5 file
         self.name = name      # name of the dataset or name of speaker
+        if freq_shift != 0:
+            self.freq_shifting_augment = True
+            self.freq_shift = freq_shift
+        else:
+            self.freq_shifting_augment = False
+            self.freq_shift = 0
 
+        # Loading the dataset
         self.firing_times = self.spikes['times']
         self.units_fired  = self.spikes['units']
         self.num_samples = self.firing_times.shape[0]
@@ -118,10 +125,14 @@ class DatasetNumpy(torch.utils.data.Dataset):
                                  self.nb_units), dtype=np.uint8)
         self.output = np.array(self.labels, dtype=np.uint8)
 
+        # Loading the dataloader
         self.load_spikes()
+
+        # Reducing the dimention of the input
         if target_dim != 700:
             self.reduce_inp_dimensions(target_dim=target_dim, axis=2, nb_rep=nb_rep)
 
+        # perform trunctation (not used in this code)
         if truncation and verbose:
             self.input = self.input[:, :150,:]
             print(f'TRUNCATION: ON')
@@ -129,6 +140,7 @@ class DatasetNumpy(torch.utils.data.Dataset):
         elif verbose: 
             print(f'TRUNCATION: OFF')
 
+        # Introduce noise in form of added spikes (not used in this code)
         if pert_proba != None:
             perturbation = jax.random.bernoulli(subkey_perturbation, p=pert_proba, shape=self.input.shape)
             perturbation = jnp.logical_or(self.input, perturbation).astype(jnp.uint8)
@@ -163,6 +175,7 @@ class DatasetNumpy(torch.utils.data.Dataset):
 
 
     def reduce_inp_dimensions(self, target_dim, axis, nb_rep):
+        '''We take the original dataset featuring 700 inputs and we rescale it to "target_dim" < 700'''
         sample_ind = int(np.ceil(self.nb_units / target_dim))
         assert nb_rep <= sample_ind, f'The maximum factor of data augmentation is {sample_ind}, you provided {nb_rep}'
         index = [np.arange(i, 700, sample_ind) for i in range(sample_ind)]
@@ -189,6 +202,19 @@ class DatasetNumpy(torch.utils.data.Dataset):
         if self.name == 'ssc':
             output = self.output[idx] + 20
         return self.input[idx], output
+
+def frequency_shift( input, freq_shift=20, p_top=0.5 ):
+    '''We take the original dataset (700) inputs and pad either the top or bottom with zeros, then cropping the exceeding frequency channels
+    - frequency_shift : number of channels to shift up or down
+    - p_top           : probability to add the frequency shit from the top (= 1 - p_bot) 
+    '''
+    in_size = input.shape[0]
+    input_padded = np.copy(input)
+    freq_shift = np.clip( int(np.random.normal()*3 + freq_shift), 0, None )
+    up_idx = np.random.uniform( size=in_size ) >= p_top
+    input_padded[up_idx] = np.pad( input[up_idx], ((0,0),(0,0),(freq_shift,0)) )[:,:,:input.shape[2]]
+    input_padded[~up_idx] = np.pad( input[~up_idx], ((0,0),(0,0),(0,freq_shift)) )[:,:,freq_shift:]
+    return input_padded
 
 def get_file(fname,
              origin,
@@ -371,7 +397,7 @@ def get_dataloader( args,
         key, subkey_perturbation = jax.random.split(key)
         train_ds, test_ds = get_numpy_datasets(subkey_perturbation, args.pert_proba, args.n_in, 
                                             cache_dir=cache_dir, download=download,
-                                            dataset_name=args.dataset_name, 
+                                            dataset_name=args.dataset_name, freq_shift=args.freq_shift,
                                             nb_steps=args.nb_steps, truncation=args.truncation)
 
         # Validation set splitting (if not explicit in dataset)

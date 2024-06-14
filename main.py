@@ -10,7 +10,7 @@ from utils_normalization import BatchNorm, LayerNorm
 from utils_initialization import SimArgs, params_initializer
 from training import train_hsnn
 
-os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".5" # needed because network is huge
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".75" # needed because network is huge
 os.environ["CUDA_VISIBLE_DEVICES"]="2"
 jax.devices()
 
@@ -67,9 +67,17 @@ if __name__ == '__main__':
         args.distrib_tau_sd = 0.1
         args.batch_size = 512
         # args.normalizer = False
-    elif args.dataset_name in ['shd', 'ssc']: pass
+    elif args.dataset_name in ['shd', 'ssc']:
+        if args.convolution == True:
+            args.nb_steps = 250
+            args.freq_shift = 10
+            args.use_test_as_valid = True
+            args.hierarchy_conv = 'kernel'
+            args.conv_kernel = 5
+            args.delta_conv = 3
     else: 
         print('Unknown dataset name. Please select a valid task name')
+
 
     print('\nTraining')
     train_loss, test_acc, val_acc, net_params_best = train_hsnn( args = args, wandb_flag=False )
