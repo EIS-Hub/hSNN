@@ -10,7 +10,7 @@ class SimArgs:
                  noise_sd=0.1, n_epochs=5, l2_lambda=0,
                  freq_lambda=0, dropout=0.1, recurrent=False, convolution=False,
                  verbose=True, save_dir_name=None, dataset_name = 'shd'):
-        # architecture
+        # architecture size
         self.dataset_name = dataset_name
         self.n_in = n_in # input channels
         self.n_out = 20 if self.dataset_name =='shd' else 35  # output channels
@@ -36,13 +36,15 @@ class SimArgs:
         self.v_thr = 1 # threshold voltage
         self.v_reset = 0 # reset voltage
         self.surrogate_fn = 'box' # type of surrogate gradient
+        # network
         self.decoder = decoder # output decoding strategy
         self.recurrent = recurrent # enables recurrent connections
         self.convolution = convolution
         self.conv_kernel = 5 #[5,5,5,8]  #[5]*self.n_layers
         self.conv_dilation = 5 #[4]*self.n_layers
         self.hierarchy_conv = False
-        self.delta_conv = 2
+        self.delta_ker = 0
+        self.delta_dil = 0
         self.distrib_tau = distrib_tau # enables individual time constant per neuron
         self.distrib_tau_sd = distrib_tau_sd # standard dev of the time constant distribution
         self.hierarchy_tau = hierarchy_tau # enables hierarchy of time constants
@@ -97,37 +99,30 @@ def params_initializer( key, args ):
     # Hierarchy on the convolution
     if args.hierarchy_conv == 'dilation':
         # dilations
-        dil_start = np.clip( int( args.conv_dilation - args.delta_dil * 0.5 ), 1, None) # initial layer dilation
-        dil_end = np.clip( int( args.conv_dilation + args.delta_dil * 0.5 ), 1, None) # final layer dilation
-        dil_layer_list = np.linspace( dil_start, dil_end, args.n_layers-2 ).astype(int)
-        dil_layer_list = np.pad( dil_layer_list, (0, 2), constant_values=args.conv_dilation )
+        # args.delta_dil = args.delta_dil
         # kernels
         args.conv_kernels = np.ones( args.n_layers ).astype(int)*args.conv_kernel
     elif args.hierarchy_conv == 'kernel': 
         # kernels
-        ker_start = np.clip( int( args.conv_kernel - args.delta_conv * 0.5 ), 1, None) # initial layer dilation
-        ker_end = np.clip( int( args.conv_kernel + args.delta_conv * 0.5 ), 1, None) # final layer dilation
-        ker_layer_list = np.linspace( ker_start, ker_end, args.n_layers-2 ).astype(int)
-        ker_layer_list = np.pad( ker_layer_list, (0, 2), constant_values=args.conv_kernel )
+        ker_start = np.clip( int( args.conv_kernel - args.delta_ker * 0.5 ), 1, None) # initial layer dilation
+        ker_end = np.clip( int( args.conv_kernel + args.delta_ker * 0.5 ), 1, None) # final layer dilation
+        ker_layer_list = np.linspace( ker_start, ker_end, args.n_layers-1 ).astype(int)
+        ker_layer_list = np.pad( ker_layer_list, (0, 1), constant_values=args.conv_kernel )
         args.conv_kernels = ker_layer_list
         # dilations
-        dil_layer_list = np.ones( args.n_layers ).astype(int)*args.conv_dilation
+        # args.delta_dil = 0
     elif args.hierarchy_conv == 'both':
         # kernels
-        ker_start = np.clip( int( args.conv_kernel - args.delta_conv * 0.5 ), 1, None) # initial layer dilation
-        ker_end = np.clip( int( args.conv_kernel + args.delta_conv * 0.5 ), 1, None) # final layer dilation
-        ker_layer_list = np.linspace( ker_start, ker_end, args.n_layers-2 ).astype(int)
-        ker_layer_list = np.pad( dil_layer_list, (0, 2), constant_values=args.conv_kernel )
+        ker_start = np.clip( int( args.conv_kernel - args.delta_ker * 0.5 ), 1, None) # initial layer dilation
+        ker_end = np.clip( int( args.conv_kernel + args.delta_ker * 0.5 ), 1, None) # final layer dilation
+        ker_layer_list = np.linspace( ker_start, ker_end, args.n_layers-1 ).astype(int)
+        ker_layer_list = np.pad( ker_layer_list, (0, 1), constant_values=args.conv_kernel )
         args.conv_kernels = ker_layer_list
         # dilations
-        dil_start = np.clip( int( args.conv_dilation - args.delta_conv * 0.5 ), 1, None) # initial layer dilation
-        dil_end = np.clip( int( args.conv_dilation + args.delta_conv * 0.5 ), 1, None) # final layer dilation
-        dil_layer_list = np.linspace( dil_start, dil_end, args.n_layers-2 ).astype(int)
-        dil_layer_list = np.pad( dil_layer_list, (0, 2), constant_values=args.conv_dilation )
+        # args.delta_dil = args.delta_dil
     else:
         args.conv_kernels = np.ones( args.n_layers ).astype(int)*args.conv_kernel
-        dil_layer_list = np.ones( args.n_layers ).astype(int)*args.conv_dilation
-    args.conv_kernels = list( args.conv_kernels ); dil_layer_list = list(dil_layer_list)
+        # args.delta_dil = 0
 
     # Initializing the weights, weight masks and time constant (alpha factors)
     w_scale = reshape_weight_scale_factor(args.w_scale, args.n_layers, args.recurrent)
@@ -191,7 +186,7 @@ def params_initializer( key, args ):
 
         # building the parameters for each layer
         net_params.append( [weight_l, alpha_l] )
-        net_states.append( [weight_mask_l, tau_l, v_mems, out_spikes, args.v_thr, dil_layer_list[l]] )
+        net_states.append( [weight_mask_l, tau_l, v_mems, out_spikes, args.v_thr, args.noise_sd] )
 
     return net_params, net_states
 

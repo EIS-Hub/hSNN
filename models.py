@@ -2,6 +2,7 @@ import jax
 import jax.numpy as jnp
 from jax.lax import scan
 from jax import vmap, jit
+from functools import partial
 
 # imports from supporting files 
 from utils_initialization import args

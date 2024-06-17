@@ -57,28 +57,32 @@ if __name__ == '__main__':
     )
 
     if args.dataset_name == 'mts_xor':
-        args.n_in = 40
-        args.n_out = 2
-        args.n_hid = 10
-        args.decoder = 'vmem_time'
-        args.time_max = 1.0 # second
-        args.timestep = args.time_max/args.nb_steps # second
-        args.tau_out = 0.05
+        args.n_in           = 40
+        args.n_out          = 2
+        args.n_hid          = 10
+        args.decoder        = 'vmem_time'
+        args.time_max       = 1.0 # second
+        args.timestep       = args.time_max/args.nb_steps # second
+        args.tau_out        = 0.05
         args.distrib_tau_sd = 0.1
-        args.batch_size = 512
+        args.batch_size     = 512
         # args.normalizer = False
     elif args.dataset_name in ['shd', 'ssc']:
         if args.convolution == True:
-            args.nb_steps = 250
-            args.freq_shift = 10
-            args.use_test_as_valid = True
-            args.hierarchy_conv = 'kernel'
-            args.conv_kernel = 5
-            args.delta_conv = 3
+            args.nb_steps           = 200 # 250
+            args.freq_shift         = 10 #5
+            args.use_test_as_valid  = True # True
+            args.hierarchy_conv     = 'kernel'
+            args.conv_kernel        = 5
+            args.delta_ker          = 3
+            args.conv_dilation      = 5
+            args.delta_dil          = 2
+            args.dropout_rate       = 0.4
+            args.l2_lambda          = 1e-5
+            args.tau_mem            = 0.02
     else: 
         print('Unknown dataset name. Please select a valid task name')
 
 
     print('\nTraining')
     train_loss, test_acc, val_acc, net_params_best = train_hsnn( args = args, wandb_flag=False )
-    
