@@ -200,7 +200,7 @@ class DatasetNumpy(torch.utils.data.Dataset):
         if self.name == 'shd':
             output = self.output[idx]
         if self.name == 'ssc':
-            output = self.output[idx] + 20
+            output = self.output[idx]
         return self.input[idx], output
 
 def frequency_shift( input, freq_shift=20, p_top=0.5 ):
