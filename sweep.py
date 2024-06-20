@@ -96,7 +96,7 @@ if __name__ == '__main__':
         print('Starting with the sweep on the Time Constant')
         config['n_layers'] = {'values':[3,4,5,6]}
         config['n_hid'] = {'values':[32,64,128]}
-        config['seed'] = {'values':[0,1,2,3,4,5]} # [0, 1, 2]
+        config['seed'] = {'values':[0,1,2,3,4,5]} 
         config['hierarchy_tau'] = {'value':'tanh'}
         config['n_epochs'] = {'value':60}
         config['delta_tau'] = {'values':[0, 0.15]}
@@ -163,6 +163,7 @@ if __name__ == '__main__':
         config['conv_kernel']   = {'value':5} # we initially fix the kernel size to 5
         config['freq_shift']    = {'value':10}
         config['delta_ker']     = {'value':0}
+        config['delta_dil']     = {'value':0}
         config['n_layers']      = {'value':4}
         config['nb_steps']      = {'value':200}
         config['n_hid']         = {'value':128}
@@ -180,7 +181,7 @@ if __name__ == '__main__':
         config['conv_kernel']   = {'values':[3,5,7,9]}
         config['convolution']   = {'value':True}
         config['hierarchy_conv']= {'value':False}
-        config['conv_dilation']   = {'value':5}
+        config['conv_dilation'] = {'value':5}
         config['freq_shift']    = {'value':10}
         config['delta_ker']     = {'value':0}
         config['n_layers']      = {'value':4}
@@ -196,13 +197,14 @@ if __name__ == '__main__':
     ### SHD SCNNL: kernel Hierarchy
     elif parsed.sweep_name == 'SHD_SCNN_kernel_Hierarchy':
         print('SHD, SCNN, Hierarchy of kernel sizes')
-        config['seed']          = {'values':[0,1,2,3,4]}
+        config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]} #{'values':[0,1,2,3,4]}
         config['delta_ker']     = {'values':[-4,-3,-2,-1,0,1,2,3,4]}
         config['convolution']   = {'value':True}
         config['hierarchy_conv']= {'value':'kernel'}
         config['conv_dilation'] = {'value':5}
+        config['delta_dil']     = {'value':0}
         config['conv_kernel']   = {'value':5}
-        config['freq_shift']    = {'value':10}
+        config['freq_shift']    = {'value':0} # 10
         config['n_layers']      = {'value':3}
         config['nb_steps']      = {'value':200}
         config['n_hid']         = {'value':128}
@@ -216,14 +218,14 @@ if __name__ == '__main__':
     ### SHD SCNNL: dilation Hierarchy
     elif parsed.sweep_name == 'SHD_SCNN_dilation_Hierarchy':
         print('SHD, SCNN, Hierarchy of kernel sizes')
-        config['seed']          = {'values':[0,1,2,3,4]}
+        config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
         config['delta_dil']     = {'values':[-3,-2,-1,0,1,2,3]}
         config['convolution']   = {'value':True}
         config['hierarchy_conv']= {'value':'dilation'}
         config['conv_dilation'] = {'value':5}
         config['conv_kernel']   = {'value':5}
         config['delta_ker']     = {'value':0}
-        config['freq_shift']    = {'value':10}
+        config['freq_shift']    = {'value':0} # 10
         config['n_layers']      = {'value':3}
         config['nb_steps']      = {'value':200}
         config['n_hid']         = {'value':128}
@@ -237,15 +239,15 @@ if __name__ == '__main__':
     ### SHD SCNNL: max performance
     elif parsed.sweep_name == 'SHD_SCNN_max_performance':
         print('SHD, SCNN, Hierarchy of kernel sizes')
-        config['seed']          = {'values':[0,1,2,3,4]}
-        config['use_test_as_valid'] = {'values':[True]}
+        config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
+        config['use_test_as_valid'] = {'values':[False]}
         config['convolution']   = {'value':True}
         config['hierarchy_conv']= {'value':'kernel'}
         config['conv_dilation'] = {'value':5}
-        config['delta_dil']     = {'value':0}
+        config['delta_dil']     = {'value':2}
         config['conv_kernel']   = {'value':5}
-        config['delta_ker']     = {'value':4}
-        config['freq_shift']    = {'value':10}
+        config['delta_ker']     = {'value':3}
+        config['freq_shift']    = {'value':10} ##### This should be 10!!
         config['n_layers']      = {'value':3}
         config['nb_steps']      = {'value':200}
         config['n_hid']         = {'value':128}
