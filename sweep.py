@@ -10,7 +10,7 @@ from utils_normalization import BatchNorm, LayerNorm
 from utils_initialization import SimArgs, params_initializer
 from training import train_hsnn
 
-os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".75" # needed because network is huge
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".9" # needed because network is huge
 os.environ["CUDA_VISIBLE_DEVICES"]="2"
 jax.devices()
 
@@ -67,8 +67,8 @@ if __name__ == '__main__':
     ### SHD Delta Tau Hiararchy - Figure 2 supplementary
     elif parsed.sweep_name == 'SHD_Delta_tau':
         print('Starting with the sweep on Delta Tau (hierarchy)')
-        config['delta_tau'] = {'values':[0.1, 0.15, 0.18]} #{'values':[-0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15, 0.18]}
-        config['seed'] = {'values':[0, 1, 2, 3, 4] } # [0, 1, 2, 3, 4] [5,6,7,8,9]
+        config['delta_tau'] = {'values':[-0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15, 0.18]}
+        config['seed'] = {'values':[0, 1, 2, 3, 4, 5, 6, 7, 8, 9] }
         config['n_epochs'] = {'value':60}
         config['n_layers'] = {'value':6}
         config['tau_mem'] = {'value':0.1}
@@ -255,6 +255,47 @@ if __name__ == '__main__':
         config['l2_lambda']     = {'value':1e-4}
         config['tau_mem']       = {'value':0.02}
         config['n_epochs']      = {'value':100}
+        sweep_config['parameters'] = config
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
+
+    ### SSC SCNN: max performance -- Table 2
+    elif parsed.sweep_name == 'SSC_SCNN_max_performance':
+        print('SSC, SCNN, max performance')
+        config['seed']          = {'values':[0,1,2,3,4]}
+        config['use_test_as_valid'] = {'value':False}
+        config['convolution']   = {'value':True}
+        config['dataset_name']  = {'value':'ssc'}
+        config['n_out']         = {'value':35}
+        config['hierarchy_conv']= {'value':'kernel'}
+        config['conv_dilation'] = {'value':5}
+        config['delta_dil']     = {'value':0} # 2
+        config['conv_kernel']   = {'value':5}
+        config['delta_ker']     = {'value':0} # 3
+        config['freq_shift']    = {'value':10}
+        config['n_layers']      = {'value':3}
+        config['nb_steps']      = {'value':200}
+        config['n_hid']         = {'value':256}
+        config['dropout_rate']  = {'value':0.4}
+        config['l2_lambda']     = {'value':1e-4}
+        config['tau_mem']       = {'value':0.02}
+        config['n_epochs']      = {'value':60}
+        sweep_config['parameters'] = config
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
+
+    ### SSC SNN: Hierarchy vs Homogeneity -- Table 2
+    elif parsed.sweep_name == 'SSC_SNN_hierarchy':
+        print('SSC, SNN, Hierarchy vs Homogeneity')
+        config['seed']          = {'values':[0,1,2,3,4]}
+        config['delta_tau']      = {'values':[0.15, 0]}
+        config['hierarchy_tau'] = {'value':'tanh'}
+        config['dataset_name']  = {'value':'ssc'}
+        config['n_out']         = {'value':35}
+        nb_steps = 200
+        config['nb_steps']      = {'value':nb_steps}
+        config['timestep']      = {'value':args.time_max/nb_steps} # second
+        config['n_layers']      = {'value':5}
+        config['n_hid']         = {'value':128}
+        config['n_epochs']      = {'value':60}
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 

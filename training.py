@@ -151,9 +151,11 @@ def train_hsnn(args=None, wandb_flag=True):
         loss_fr = args.freq_lambda * (args.target_fr - avg_spikes_neuron)**2
         # loss on the decaying factor
         loss_alpha = optimizers.l2_norm( [jax.nn.relu(net_params[l][1]-1.+5e-2) for l in range(len(net_params))] ) * 1e-1
+        loss_alpha_sd = optimizers.l2_norm( [(net_params[l][1]-jnp.mean(net_params[l][1])) for l in range(len(net_params))] ) * 1e-1
+        # loss_alpha_sd = jnp.sum( jnp.stack( [jnp.std( net_params[l][1] ) for l in range(len(net_params))] ) ) * 1e-12
         # loss_alpha = optimizers.l2_norm( [jax.nn.sigmoid(net_params[l][1]) for l in range(len(net_params))] ) * 1e-2
         # Total loss
-        loss_total = loss_ce + loss_l2 + loss_fr + loss_alpha
+        loss_total = loss_ce + loss_l2 + loss_fr + loss_alpha + loss_alpha_sd
         loss_values = [num_correct, loss_ce]
         return loss_total, loss_values
  
@@ -231,7 +233,7 @@ def train_hsnn(args=None, wandb_flag=True):
             if not args.train_alpha:
                 for g in range(len(grads)): grads[g][1] *= 0
             else: 
-                for g in range(len(grads)): grads[g][1] *= 1 #1e-9
+                for g in range(len(grads)): grads[g][1] *= 1
                 grads[-1][1] *= 0.
             # weight update
             opt_state = opt_update(epoch, grads, opt_state)

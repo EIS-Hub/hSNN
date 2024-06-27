@@ -414,7 +414,9 @@ def get_dataloader( args,
 
         train_loader_custom_collate = DataLoader(train_ds_split, args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
         val_loader_custom_collate   = DataLoader(val_ds_split,   args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
-        test_loader_custom_collate  = DataLoader(test_ds,        args.batch_size, shuffle=None, collate_fn=custom_collate_fn)
+        if args.dataset_name == 'ssc':
+            test_loader_custom_collate  = DataLoader(test_ds,        args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
+        else: test_loader_custom_collate  = DataLoader(test_ds,        args.batch_size, shuffle=None, collate_fn=custom_collate_fn)
         return train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate
     # selecting the MTS-XOR task
     elif args.dataset_name == 'mts_xor':

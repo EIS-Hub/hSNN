@@ -83,6 +83,5 @@ if __name__ == '__main__':
     else: 
         print('Unknown dataset name. Please select a valid task name')
 
-
     print('\nTraining')
     train_loss, test_acc, val_acc, net_params_best = train_hsnn( args = args, wandb_flag=False )
