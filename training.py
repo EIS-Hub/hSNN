@@ -151,7 +151,7 @@ def train_hsnn(args=None, wandb_flag=True):
         loss_fr = args.freq_lambda * (args.target_fr - avg_spikes_neuron)**2
         # loss on the decaying factor
         loss_alpha = optimizers.l2_norm( [jax.nn.relu(net_params[l][1]-1.+5e-2) for l in range(len(net_params))] ) * 1e-1
-        loss_alpha_sd = optimizers.l2_norm( [(net_params[l][1]-jnp.mean(net_params[l][1])) for l in range(len(net_params))] ) * 1e-1
+        loss_alpha_sd = optimizers.l2_norm( [(net_params[l][1]-jnp.mean(net_params[l][1])) for l in range(len(net_params))] ) * args.l2_alpha_sd
         # loss_alpha_sd = jnp.sum( jnp.stack( [jnp.std( net_params[l][1] ) for l in range(len(net_params))] ) ) * 1e-12
         # loss_alpha = optimizers.l2_norm( [jax.nn.sigmoid(net_params[l][1]) for l in range(len(net_params))] ) * 1e-2
         # Total loss
