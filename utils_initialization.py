@@ -64,6 +64,7 @@ class SimArgs:
         self.lr_decay_every = 5 #10
         self.lr_start_decay = 25
         self.l2_lambda = l2_lambda
+        self.l2_alpha_sd = 0 # penalization on the standard dev of the time constants
         self.freq_lambda = freq_lambda
         self.target_fr = 12.
         self.dropout_rate = dropout
