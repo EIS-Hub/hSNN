@@ -69,14 +69,14 @@ if __name__ == '__main__':
         # args.normalizer = False
     elif args.dataset_name in ['shd', 'ssc']:
         if args.convolution == True:
-            args.nb_steps           = 200 # 250
-            args.freq_shift         = 10 #10
+            args.nb_steps           = 200 # 200
+            args.freq_shift         = 10
             args.use_test_as_valid  = False # True
             args.hierarchy_conv     = 'kernel'
-            args.conv_kernel        = 5
-            args.delta_ker          = 3
-            args.conv_dilation      = 5
-            args.delta_dil          = 2
+            args.conv_kernel        = 5 #5
+            args.delta_ker          = 3 #3
+            args.conv_dilation      = 5 #3
+            args.delta_dil          = 2 #2
             args.dropout_rate       = 0.4
             args.l2_lambda          = 1e-4
             args.tau_mem            = 0.02

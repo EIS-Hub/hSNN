@@ -84,7 +84,8 @@ if __name__ == '__main__':
         print('Starting with the sweep on the Time Constant')
         config['tau_mem'] = {'values':[0.01, 0.05, 0.1, 0.2, 0.4]} # [0.01, 0.05, 0.1, 0.2, 0.4]
         config['seed'] = {'values':[0,1,2]} # [0, 1, 2]
-        config['distrib_tau'] = {'values':[True, False]}
+        # config['distrib_tau'] = {'values':[True, False]}
+        config['distrib_tau'] = {'value':True}
         # config['recurrent'] = {'value':True} ### ----> be careful here!
         config['n_epochs'] = {'value':60}
         config['n_layers'] = {'value':4}
@@ -156,12 +157,12 @@ if __name__ == '__main__':
     ### SHD SCNNL: dilation tuning
     elif parsed.sweep_name == 'SHD_SCNN_dilation_tuning':
         print('SHD, SCNN, tuning of the dilation started')
-        config['seed']          = {'values':[0,1,2,3,4]}
+        config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
         config['conv_dilation'] = {'values':[3,5,7,12,24]}
         config['convolution']   = {'value':True}
         config['hierarchy_conv']= {'value':False}
         config['conv_kernel']   = {'value':5} # we initially fix the kernel size to 5
-        config['freq_shift']    = {'value':10}
+        config['freq_shift']    = {'value':0} # 10
         config['delta_ker']     = {'value':0}
         config['delta_dil']     = {'value':0}
         config['n_layers']      = {'value':4}
@@ -177,12 +178,12 @@ if __name__ == '__main__':
     ### SHD SCNNL: kernel size tuning
     elif parsed.sweep_name == 'SHD_SCNN_kernel_tuning':
         print('SHD, SCNN, tuning of the kernel sizes started')
-        config['seed']          = {'values':[0,1,2,3,4]}
+        config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
         config['conv_kernel']   = {'values':[3,5,7,9]}
         config['convolution']   = {'value':True}
         config['hierarchy_conv']= {'value':False}
         config['conv_dilation'] = {'value':5}
-        config['freq_shift']    = {'value':10}
+        config['freq_shift']    = {'value':0}
         config['delta_ker']     = {'value':0}
         config['n_layers']      = {'value':4}
         config['nb_steps']      = {'value':200}
@@ -240,8 +241,9 @@ if __name__ == '__main__':
     elif parsed.sweep_name == 'SHD_SCNN_max_performance':
         print('SHD, SCNN, Hierarchy of kernel sizes')
         config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
-        config['use_test_as_valid'] = {'values':[False]}
+        config['use_test_as_valid'] = {'values':[True]}
         config['convolution']   = {'value':True}
+        config['train_alpha']   = {'value':True} # False
         config['hierarchy_conv']= {'value':'kernel'}
         config['conv_dilation'] = {'value':5}
         config['delta_dil']     = {'value':2}
