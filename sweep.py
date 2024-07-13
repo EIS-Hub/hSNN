@@ -301,6 +301,108 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
+    ###############################
+    ######  Static datasets  ######
+    ###############################
+
+    elif parsed.sweep_name == 'MNIST_tau_mem':
+        print('Starting with the sweep on the Time Constant')
+        config['seed']          = {'values':[0,1,2,3,4]}
+        config['tau_mem']       = {'values':[0.02, 0.05, 0.1, 0.2, 0.5]}
+        config['dataset_name']  = {'value':'mnist'} # Task name!
+        config['n_hid']         = {'value':128}
+        config['n_layers']      = {'value':4}
+        config['hierarchy_tau'] = {'value':False}
+        config['n_epochs']      = {'value':20}
+        config['distrib_tau']   = {'value':'normal'}
+        config['n_in']          = {'value':28*28}
+        config['n_out']         = {'value':10}
+        nb_steps = 50
+        config['nb_steps']      = {'value':nb_steps}
+        config['time_max']      = {'value':1.0}
+        config['timestep']      = {'value':1./nb_steps}
+        config['tau_out']       = {'value':0.2}
+        config['distrib_tau_sd']= {'value':0.1}
+        config['batch_size']    = {'value':256}
+        config['experiment_name'] = {'value':parsed.sweep_name}
+        sweep_config['parameters'] = config
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
+
+    elif parsed.sweep_name == 'MNIST_delta_tau':
+        print('Starting with the sweep on the Time Constant')
+        config['seed']          = {'values':[0,1,2,3,4]}
+        config['delta_tau']     = {'values':[-0.4, -0.2, 0, 0.2, 0.4]}
+        config['tau_mem']       = {'value':0.5}
+        config['hierarchy_tau'] = {'value':'linear'}
+        config['dataset_name']  = {'value':'mnist'} # Task name!
+        config['n_hid']         = {'value':128}
+        config['n_layers']      = {'value':4}
+        config['n_epochs']      = {'value':20}
+        config['distrib_tau']   = {'value':'normal'}
+        config['n_in']          = {'value':28*28}
+        config['n_out']         = {'value':10}
+        nb_steps = 50
+        config['nb_steps']      = {'value':nb_steps}
+        config['time_max']      = {'value':1.0}
+        config['timestep']      = {'value':1./nb_steps}
+        config['tau_out']       = {'value':0.2}
+        config['distrib_tau_sd']= {'value':0.1}
+        config['batch_size']    = {'value':256}
+        config['experiment_name'] = {'value':parsed.sweep_name}
+        sweep_config['parameters'] = config
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
+
+    elif parsed.sweep_name == 'sMNIST_delta_tau':
+        print('Delta tau for the sequential MNIST task')
+        nb_steps = 28*28
+        timestep = 1/nb_steps
+        config['seed']          = {'values':[0,1,2,3,4]}
+        config['delta_tau']     = {'values':[-80*timestep, -40*timestep, 0, 40*timestep, 80*timestep]}
+        config['hierarchy_tau'] = {'value':'linear'}
+        config['dataset_name']  = {'value':'s-mnist'} # Task name!
+        config['n_epochs']      = {'value':40}
+        config['n_hid']         = {'value':64}
+        config['n_layers']      = {'value':4}
+        config['n_in']          = {'value':1}
+        config['n_out']         = {'value':10}
+        config['recurrent']     = {'value':True} # False!!!!
+        config['distrib_tau']   = {'value':'normal'}
+        config['nb_steps']      = {'value':nb_steps}
+        config['time_max']      = {'value':1.0}
+        config['timestep']      = {'value':1./nb_steps}
+        config['tau_out']       = {'value':200*timestep}
+        config['tau_mem']       = {'value':50*timestep}
+        config['batch_size']    = {'value':256}
+        config['experiment_name'] = {'value':parsed.sweep_name}
+        sweep_config['parameters'] = config
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
+
+    # permuted sequential MNIST
+    elif parsed.sweep_name == 'psMNIST_delta_tau':
+        print('Delta tau for the permuted sequential MNIST task')
+        nb_steps = 28*28
+        timestep = 1/nb_steps
+        config['seed']          = {'values':[0,1,2,3,4]}
+        config['delta_tau']     = {'values':[0, 80*timestep]}
+        config['hierarchy_tau'] = {'value':'linear'}
+        config['dataset_name']  = {'value':'ps-mnist'}
+        config['n_epochs']      = {'value':40}
+        config['n_hid']         = {'value':64}
+        config['n_layers']      = {'value':4}
+        config['n_in']          = {'value':1}
+        config['n_out']         = {'value':10}
+        config['recurrent']     = {'value':True} # False!!!!
+        config['distrib_tau']   = {'value':'normal'}
+        config['nb_steps']      = {'value':nb_steps}
+        config['time_max']      = {'value':1.0}
+        config['timestep']      = {'value':1./nb_steps}
+        config['tau_out']       = {'value':200*timestep}
+        config['tau_mem']       = {'value':50*timestep}
+        config['batch_size']    = {'value':256}
+        config['experiment_name'] = {'value':parsed.sweep_name}
+        sweep_config['parameters'] = config
+        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
+
     ### Test
     else:
         print('Invalid sweep name')

@@ -152,8 +152,6 @@ def train_hsnn(args=None, wandb_flag=True):
         # loss on the decaying factor
         loss_alpha = optimizers.l2_norm( [jax.nn.relu(net_params[l][1]-1.+5e-2) for l in range(len(net_params))] ) * 1e-1
         loss_alpha_sd = optimizers.l2_norm( [(net_params[l][1]-jnp.mean(net_params[l][1])) for l in range(len(net_params))] ) * args.l2_alpha_sd
-        # loss_alpha_sd = jnp.sum( jnp.stack( [jnp.std( net_params[l][1] ) for l in range(len(net_params))] ) ) * 1e-12
-        # loss_alpha = optimizers.l2_norm( [jax.nn.sigmoid(net_params[l][1]) for l in range(len(net_params))] ) * 1e-2
         # Total loss
         loss_total = loss_ce + loss_l2 + loss_fr + loss_alpha + loss_alpha_sd
         loss_values = [num_correct, loss_ce]
@@ -222,6 +220,7 @@ def train_hsnn(args=None, wandb_flag=True):
     for epoch in range(args.n_epochs):
         t = time.time()
         acc = 0; count = 0
+        train_loss_epoch = []
         for batch_idx, (x, y) in enumerate(train_dl):
             # make a frequency shift if selected
             if args.freq_shift != 0: x = frequency_shift( x, args.freq_shift )
@@ -239,7 +238,7 @@ def train_hsnn(args=None, wandb_flag=True):
             opt_state = opt_update(epoch, grads, opt_state)
             net_params = get_params(opt_state)
             # append stats
-            train_loss.append(L)
+            train_loss_epoch.append(L)
             train_step += 1
             acc += tot_correct
             count += x.shape[0]
@@ -247,6 +246,7 @@ def train_hsnn(args=None, wandb_flag=True):
         ### Training logs
         if args.dataset_name == 'mts_xor': count = count*args.nb_steps
         train_acc = 100*acc/count
+        train_loss.append( train_loss_epoch )
         elapsed_time = time.time() - t            
         ### Validation
         acc_val = 0; count_val = 0
@@ -260,7 +260,7 @@ def train_hsnn(args=None, wandb_flag=True):
             net_params_best = net_params
             best_val_acc = val_acc
 
-        if args.verbose: print(f'Epoch: [{epoch+1}/{args.n_epochs}] - Loss: {L:.5f} - '
+        if args.verbose: print(f'Epoch: [{epoch+1}/{args.n_epochs}] - Loss: {np.mean(train_loss_epoch):.5f} - '
               f' Training acc: {train_acc:.2f} - Validation acc: {val_acc:.2f} - t: {elapsed_time:.2f} sec')
         if wandb_flag: wandb.log({'Epoch': epoch+1, 'Train Acc': train_acc, 'Validation Acc': val_acc})
 

@@ -17,7 +17,7 @@ class SimArgs:
         self.n_layers = n_layers # number of layers
         self.n_hid = n_hid # number of hidden neurons per layer
         # weight
-        self.w_scale = [1/np.sqrt(  float(self.n_in)  )] + [1/np.sqrt( float(self.n_hid) )]*self.n_layers
+        self.w_scale = [1/np.sqrt(  float(self.n_in)  )] + [1/np.sqrt( float(self.n_hid) )]*self.n_layers #[0.5/np.sqrt(  float(self.n_in)  )] + [0.2/np.sqrt( float(self.n_hid) )]*self.n_layers
         self.noise_sd = 0 # noise to apply to weight during training (not supported for now)
         # input data
         self.nb_rep = 1
@@ -64,7 +64,7 @@ class SimArgs:
         self.lr_decay_every = 5 #10
         self.lr_start_decay = 25
         self.l2_lambda = l2_lambda
-        self.l2_alpha_sd = 0 # penalization on the standard dev of the time constants
+        self.l2_alpha_sd = 1e-2 #0 # penalization on the standard dev of the time constants
         self.freq_lambda = freq_lambda
         self.target_fr = 12.
         self.dropout_rate = dropout

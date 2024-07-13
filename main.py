@@ -56,17 +56,20 @@ if __name__ == '__main__':
                  convolution= parsed.convolution
     )
 
+    ### MTS-XOR taks
     if args.dataset_name == 'mts_xor':
-        args.n_in           = 40
-        args.n_out          = 2
-        args.n_hid          = 10
-        args.decoder        = 'vmem_time'
-        args.time_max       = 1.0 # second
-        args.timestep       = args.time_max/args.nb_steps # second
-        args.tau_out        = 0.05
-        args.distrib_tau_sd = 0.1
-        args.batch_size     = 512
+        args.n_in                   = 40
+        args.n_out                  = 2
+        args.n_hid                  = 10
+        args.decoder                = 'vmem_time'
+        args.time_max               = 1.0 # second
+        args.timestep               = args.time_max/args.nb_steps # second
+        args.tau_out                = 0.05
+        args.distrib_tau_sd         = 0.1
+        args.batch_size             = 512
         # args.normalizer = False
+
+    ### Convolution SNN for SSC/SHD taks
     elif args.dataset_name in ['shd', 'ssc']:
         if args.convolution == True:
             args.nb_steps           = 200 # 200
@@ -80,6 +83,33 @@ if __name__ == '__main__':
             args.dropout_rate       = 0.4
             args.l2_lambda          = 1e-4
             args.tau_mem            = 0.02
+
+    ### MNIST taks
+    elif args.dataset_name == 'mnist':
+        args.nb_steps               = 50 # 100
+        args.n_in                   = 28*28
+        args.n_out                  = 10
+        args.timestep               = 1/args.nb_steps # s
+        args.tau_mem                = 3*args.timestep
+
+    ### Sequential MNIST taks
+    elif args.dataset_name in ['s-mnist', 'ps-mnist']:
+        args.nb_steps               = 28*28
+        args.n_in                   = 1
+        args.n_out                  = 10
+        args.n_hid                  = 64
+        args.timestep               = 1/args.nb_steps # s
+        args.tau_mem                = 50*args.timestep
+        args.tau_out                = 200*args.timestep
+        args.dropout                = 0.1
+        args.lr                     = 0.01
+        args.batch_size             = 256
+        args.hierarchy_conv         = 'kernel'
+        args.conv_kernel            = 3 #5
+        args.delta_ker              = 0 #3
+        args.conv_dilation          = 10 #3
+        args.delta_dil              = 0 #2
+
     else: 
         print('Unknown dataset name. Please select a valid task name')
 

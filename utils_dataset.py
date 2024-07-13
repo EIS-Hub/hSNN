@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from scipy.stats import lognorm, norm
 from sklearn.model_selection import train_test_split
 import torch
+import torchvision
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.data import random_split
 import random
@@ -374,6 +375,42 @@ class DatasetNumpy_MTS_XOR(torch.utils.data.Dataset):
 
     def __data_generation(self, idx):
         return self.input[idx], self.output[idx]
+    
+def current2firing_time(x, tau=20, thr=0.2, tmax=1.0, epsilon=1e-7):
+    """ Computes first firing time latency for a current input x assuming the charge time of a current based LIF neuron.
+
+    Args:
+    x -- The "current" values
+
+    Keyword args:
+    tau -- The membrane time constant of the LIF neuron to be charged
+    thr -- The firing threshold value 
+    tmax -- The maximum time returned 
+    epsilon -- A generic (small) epsilon > 0
+
+    Returns:
+    Time to first spike for each "current" x
+
+    --> used for MNIST
+    """
+    idx = x<thr
+    x = np.clip(x,thr+epsilon,1e9)
+    T = tau*np.log(x/(x-thr))
+    T[idx] = tmax
+    return T
+
+def expand_time_dim( data, nb_steps=100 ):
+    ''' This function implements the latency coding encoding of a static (gray-scale image-like) dataset
+            -data: the input data, in [batch, flattened_image_size]
+            -nb_steps: the time dimension size to add
+        The gray-scale entries are first discretized and then then corresponding temporal entry is set to "1"
+        All other temporal entries are set to 0.
+    '''
+    times = current2firing_time( data )
+    data_time = torch.zeros( (data.shape[0], nb_steps, data.shape[-1]), dtype=torch.uint8 )
+    bs, ids = torch.where( times.type(torch.int8) != 1 )
+    data_time[bs, torch.clip( times.type(torch.int)[bs, ids], 0, nb_steps-1).type(torch.int), ids] = 1
+    return  data_time
 
 def get_dataloader( args, 
                     cache_dir='/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD',
@@ -418,17 +455,80 @@ def get_dataloader( args,
             test_loader_custom_collate  = DataLoader(test_ds,        args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
         else: test_loader_custom_collate  = DataLoader(test_ds,        args.batch_size, shuffle=None, collate_fn=custom_collate_fn)
         return train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate
+    
     # selecting the MTS-XOR task
     elif args.dataset_name == 'mts_xor':
         # get the Dataset
-        train_ds_split = DatasetNumpy_MTS_XOR( n_epochs=20, batch_size=args.batch_size, nb_steps=args.nb_steps )
-        val_ds_split = DatasetNumpy_MTS_XOR( n_epochs=2, batch_size=args.batch_size, nb_steps=args.nb_steps )
-        test_ds = DatasetNumpy_MTS_XOR( n_epochs=2, batch_size=args.batch_size, nb_steps=args.nb_steps )
+        train_ds_split = DatasetNumpy_MTS_XOR( n_epochs=20, batch_size=args.batch_size, nb_steps=args.nb_steps, channel_size=int(args.n_in/2) )
+        val_ds_split = DatasetNumpy_MTS_XOR( n_epochs=2, batch_size=args.batch_size, nb_steps=args.nb_steps, channel_size=int(args.n_in/2) )
+        test_ds = DatasetNumpy_MTS_XOR( n_epochs=2, batch_size=args.batch_size, nb_steps=args.nb_steps, channel_size=int(args.n_in/2) )
 
         train_loader_custom_collate = DataLoader(train_ds_split, args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
         val_loader_custom_collate   = DataLoader(val_ds_split,   args.batch_size, shuffle=False, collate_fn=custom_collate_fn)
         test_loader_custom_collate  = DataLoader(test_ds,        args.batch_size, shuffle=None, collate_fn=custom_collate_fn)
         return train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate
+    
+    # selecting the MNIST task
+    elif args.dataset_name == 'mnist':
+        # get the dataset
+        if os.getcwd() == '/home/filippo/hsnn':
+            root = '/home/filippo/data/audiospikes'
+        elif os.getcwd() == '/Users/filippomoro/Documents/hsnn':
+            root = '/Users/filippomoro/Documents/datasets'
+        train_dataset = torchvision.datasets.MNIST(root, train=True, transform=None, target_transform=None, download=True)
+        test_dataset = torchvision.datasets.MNIST(root, train=False, transform=None, target_transform=None, download=True)
+        
+        # add the ficticious temporal dimention
+        train_dataset.data  = expand_time_dim( train_dataset.data.reshape( train_dataset.data.shape[0], -1 )/255., nb_steps=args.nb_steps )
+        test_dataset.data   = expand_time_dim( test_dataset.data.reshape( test_dataset.data.shape[0], -1 )/255., nb_steps=args.nb_steps )
+        
+        # split train and validation
+        train_size = int(0.8 * len(train_dataset))
+        val_size   = len(train_dataset) - train_size
+        train_ds_split, val_ds_split = random_split(train_dataset, [train_size, val_size])
+
+        # produce the dataloader
+        train_loader_custom_collate = DataLoader(train_ds_split, args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
+        val_loader_custom_collate   = DataLoader(val_ds_split,   args.batch_size, shuffle=False, collate_fn=custom_collate_fn)
+        test_loader_custom_collate  = DataLoader(test_dataset,   args.batch_size, shuffle=None, collate_fn=custom_collate_fn)
+        return train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate
+
+    elif args.dataset_name in ['s-mnist', 'ps-mnist']:
+        # get the dataset
+        if os.getcwd() == '/home/filippo/hsnn':
+            root = '/home/filippo/data/audiospikes'
+        elif os.getcwd() == '/Users/filippomoro/Documents/hsnn':
+            root = '/Users/filippomoro/Documents/datasets'
+
+        if args.dataset_name == 's-mnist':
+            transform = torchvision.transforms.Compose(
+             [torchvision.transforms.ToTensor(),
+              torchvision.transforms.Lambda(lambda x: x.view(-1,1))
+             ])
+        elif args.dataset_name == 'ps-mnist':
+            pixel_permutation = torch.randperm(28*28)
+            transform = torchvision.transforms.Compose(
+                [torchvision.transforms.ToTensor(),
+                torchvision.transforms.Lambda(lambda x: x.view(-1,1)[pixel_permutation])
+                ])
+        else: transform = torchvision.transforms.Compose(
+                [torchvision.transforms.ToTensor(),
+                ])
+            
+        train_dataset = torchvision.datasets.MNIST(root, train=True, transform=transform, target_transform=None, download=True)
+        test_dataset = torchvision.datasets.MNIST(root, train=False, transform=transform, target_transform=None, download=True)
+        
+        # split train and validation
+        train_size = int(0.8 * len(train_dataset))
+        val_size   = len(train_dataset) - train_size
+        train_ds_split, val_ds_split = random_split(train_dataset, [train_size, val_size])
+
+        # produce the dataloader
+        train_loader_custom_collate = DataLoader(train_ds_split, args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
+        val_loader_custom_collate   = DataLoader(val_ds_split,   args.batch_size, shuffle=False, collate_fn=custom_collate_fn)
+        test_loader_custom_collate  = DataLoader(test_dataset,   args.batch_size, shuffle=None, collate_fn=custom_collate_fn)
+        return train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate
+
     else:
         print('Dataset name does not match any known taks. Please repeat the experiment with new dataset_name')
         return None, None, None
