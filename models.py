@@ -128,68 +128,8 @@ def Conv1D_causal( x, weight, dilation=5 ):
                                          padding='valid', dimension_numbers=dims,
                                          rhs_dilation=rhs_dilation )
 
-# # selecting the correct layer to parallelize
-# if args.recurrent: 
-#     layer = rlif_step
-# else:
-#     layer = lif_step
-# if args.decoder == 'freq':
-#     layer_out = lif_step
-# else: 
-#     layer_out = li_step
-# if args.normalizer == 'batch': norm = BatchNorm
-# elif args.normalizer == 'layer': norm = LayerNorm
-# else: norm = None
 
-# @jit
-# def scan_layer( args_in, input_spikes ):
-#     args_out_layer, out_spikes_layer = scan( layer, args_in, input_spikes, length=args.nb_steps )
-#     return args_out_layer, out_spikes_layer
-# vscan_layer = vmap( scan_layer, in_axes=(None, 0))
-
-# @jit
-# def scan_out_layer( args_in, input_spikes ):
-#     args_out_layer, out_spikes_layer = scan( layer_out, args_in, input_spikes, length=args.nb_steps )
-#     return args_out_layer, out_spikes_layer
-# vscan_layer_out = vmap( scan_out_layer, in_axes=(None, 0))
-
-# @jit
-# def hsnn( args_in, input_spikes ):
-#     net_params, net_states, key, dropout_rate = args_in
-#     n_layers = len( net_params )
-#     # collection of output spikes
-#     out_spike_net = []
-#     # Loop over the layers
-#     for l in range(n_layers):
-#         if l == 0: layer_input_spike = input_spikes
-#         else: layer_input_spike = out_spikes_layer
-#         # making layers' params and states explitic
-#         # parameters (weights and alpha) and the state of the neurons (spikes, inputs and membrane, ecc..)
-#         w, alpha = net_params[l]; w_mask, tau, V_mem, out_spikes, v_thr, noise_sd = net_states[l]
-#         if len(w) == 3: # it means that we'll do normalization
-#             weight, scale, bias = w
-#         else: weight = w
-#         if len(weight) ==2: weight, _ = weight
-#         # we evolve the state of the neuron according to the LIF formula, Euler approximation
-#         I_in = jnp.matmul(layer_input_spike, weight)
-#         # Normalization (if selected)
-#         if len(w) == 3: # it means that we'll do normalization
-#             b, t, n = I_in.shape
-#             I_in = norm( I_in.reshape( b*t, n ), bias = bias, scale = scale )
-#             I_in = I_in.reshape( b,t,n ) # normalized input current
-#         # Forward pass of the Layer
-#         args_in_layer = [net_params[l], net_states[l]]
-#         if l+1 == n_layers:
-#             _, out_spikes_layer = vscan_layer_out( args_in_layer, I_in )
-#         else: 
-#             _, out_spikes_layer = vscan_layer( args_in_layer, I_in )
-#             # Dropout
-#             key, key_dropout = jax.random.split(key, 2)
-#             out_spikes_layer = dropout( key_dropout, out_spikes_layer, rate=dropout_rate, deterministic=False )
-#         out_spike_net.append(out_spikes_layer)
-#     return out_spikes_layer, out_spike_net
-
-
+### old models
 # Leaky Integrate and Fire layer
 def lif_forward(net_params, net_states, input_spikes, norm=LayerNorm):
     ''' Forward function for the Leaky-Integrate and Fire neuron layer, adopted here for the hidden layers. '''

@@ -11,71 +11,72 @@ class SimArgs:
                  freq_lambda=0, dropout=0.1, recurrent=False, convolution=False,
                  verbose=True, save_dir_name=None, dataset_name = 'shd'):
         # architecture size
-        self.dataset_name = dataset_name
-        self.n_in = n_in # input channels
-        self.n_out = 20 if self.dataset_name =='shd' else 35  # output channels
-        self.n_layers = n_layers # number of layers
-        self.n_hid = n_hid # number of hidden neurons per layer
+        self.dataset_name   = dataset_name
+        self.n_in           = n_in # input channels
+        self.n_out          = 20 if self.dataset_name =='shd' else 35  # output channels
+        self.n_layers       = n_layers # number of layers
+        self.n_hid          = n_hid # number of hidden neurons per layer
         # weight
-        self.w_scale = [1/np.sqrt(  float(self.n_in)  )] + [1/np.sqrt( float(self.n_hid) )]*self.n_layers #[0.5/np.sqrt(  float(self.n_in)  )] + [0.2/np.sqrt( float(self.n_hid) )]*self.n_layers
-        self.noise_sd = 0 # noise to apply to weight during training (not supported for now)
+        self.w_scale        = [1/np.sqrt(  float(self.n_in)  )] + [1/np.sqrt( float(self.n_hid) )]*self.n_layers #scaling factors for weight initialization
+        self.noise_sd       = 0 # noise to apply to weight during training (not supported for now)
         # input data
-        self.nb_rep = 1
-        self.nb_steps = 100 # number of time steps of the input
-        self.time_max = 1.4 # second
-        self.timestep = self.time_max/self.nb_steps # second
+        self.nb_rep         = 1
+        self.nb_steps       = 100 # number of time steps of the input
+        self.time_max       = 1.4 # second
+        self.timestep       = self.time_max/self.nb_steps # second
+        self.noise_rate     = 0.01 # noise rate, related to a poisson process in the MTS-XOR task
         # input data agumentation
-        self.pert_proba = None # data augmentation
-        self.truncation = False # to use only 150 of 280 timesteps
-        self.freq_shift = 0
+        self.pert_proba     = None # data augmentation
+        self.truncation     = False # to use only 150 of 280 timesteps
+        self.freq_shift     = 0
         # neuron model
-        self.tau_mem = tau_mem # [second], membrane voltage time constant
-        self.tau_out = 0.2 # [second], membrane voltage time constant (output neurons)
-        self.delta_tau = delta_tau # [second], different of tau between input and output layers
-        self.v_rest = 0 # resting membrane voltage
-        self.v_thr = 1 # threshold voltage
-        self.v_reset = 0 # reset voltage
-        self.surrogate_fn = 'box' # type of surrogate gradient
+        self.tau_mem        = tau_mem # [second], membrane voltage time constant
+        self.tau_out        = 0.2 # [second], membrane voltage time constant (output neurons)
+        self.delta_tau      = delta_tau # [second], different of tau between input and output layers
+        self.v_rest         = 0 # resting membrane voltage
+        self.v_thr          = 1 # threshold voltage
+        self.v_reset        = 0 # reset voltage
+        self.surrogate_fn   = 'box' # type of surrogate gradient
         # network
-        self.decoder = decoder # output decoding strategy
-        self.recurrent = recurrent # enables recurrent connections
-        self.convolution = convolution
-        self.conv_kernel = 5 #[5,5,5,8]  #[5]*self.n_layers
-        self.conv_dilation = 5 #[4]*self.n_layers
+        self.decoder        = decoder # output decoding strategy
+        self.recurrent      = recurrent # enables recurrent connections
+        self.convolution    = convolution
+        self.conv_kernel    = 5 #[5,5,5,8]  #[5]*self.n_layers
+        self.conv_dilation  = 5 #[4]*self.n_layers
         self.hierarchy_conv = False
-        self.delta_ker = 0
-        self.delta_dil = 0
-        self.distrib_tau = distrib_tau # enables individual time constant per neuron
+        self.delta_ker      = 0
+        self.delta_dil      = 0
+        self.distrib_tau    = distrib_tau # enables individual time constant per neuron
         self.distrib_tau_sd = distrib_tau_sd # standard dev of the time constant distribution
-        self.hierarchy_tau = hierarchy_tau # enables hierarchy of time constants
-        self.tanh_coef = 0.5 # sets the steepness of the tanh function through the hidden layers
-        self.tanh_center = 0.5 # sets the "zero" (reference) for the tanh function scaling the time constant
-        self.train_alpha = train_tau # enables training the time constant
-        self.normalizer = normalizer # selects the normalization layer
+        self.hierarchy_tau  = hierarchy_tau # enables hierarchy of time constants
+        self.tanh_coef      = 0.5 # sets the steepness of the tanh function through the hidden layers
+        self.tanh_center    = 0.5 # sets the "zero" (reference) for the tanh function scaling the time constant
+        self.train_alpha    = train_tau # enables training the time constant
+        self.normalizer     = normalizer # selects the normalization layer
         self.norm_bias_init = 0.0 
         # training
-        self.lr = 0.01 # 0.01 # learning rate
-        self.n_epochs = n_epochs # number of epochs
-        self.grad_clip = 1000 # gradient clipping
-        self.batch_size = 256 # batch size
-        self.seed = seed # seed, for reproducibility
-        self.lr_config = 2 
-        self.lr_decay = 0.5 #0.75 # learning rate decay
+        self.lr             = 0.01 # 0.01 # learning rate
+        self.n_epochs       = n_epochs # number of epochs
+        self.grad_clip      = 1000 # gradient clipping
+        self.batch_size     = 256 # batch size
+        self.seed           = seed # seed, for reproducibility
+        self.lr_config      = 2 
+        self.lr_decay       = 0.5 #0.75 # learning rate decay
         self.lr_decay_every = 5 #10
         self.lr_start_decay = 25
-        self.l2_lambda = l2_lambda
-        self.l2_alpha_sd = 1e-2 #0 # penalization on the standard dev of the time constants
-        self.freq_lambda = freq_lambda
-        self.target_fr = 12.
-        self.dropout_rate = dropout
-        self.verbose = verbose
+        self.l2_lambda      = l2_lambda
+        self.l2_alpha_sd    = 1e-2 #0 # penalization on the standard dev of the time constants
+        self.freq_lambda    = freq_lambda
+        self.target_fr      = 12.
+        self.dropout_rate   = dropout
+        self.verbose        = verbose
         self.use_test_as_valid = False # be very careful. This flag selects the training set as the validation set. 
                                        # It's a really bad practise, but it has unfortunately become standard in SHD...
                                        # see Bittar 2022, or Masquelier 2022...
         # saving options
-        self.save_dir_name = save_dir_name
-        self.wandb = True
-        self.experiment_name = 'hssn_test'
+        self.save_dir_name  = save_dir_name
+        self.wandb          = True
+        self.experiment_name= 'hssn_test'
 args = SimArgs()
 
 # function that initializes the hyperparameters of the network
@@ -111,7 +112,6 @@ def params_initializer( key, args ):
         ker_layer_list = np.pad( ker_layer_list, (0, 1), constant_values=args.conv_kernel )
         args.conv_kernels = ker_layer_list
         # dilations
-        # args.delta_dil = 0
     elif args.hierarchy_conv == 'both':
         # kernels
         ker_start = np.clip( int( args.conv_kernel - args.delta_ker * 0.5 ), 1, None) # initial layer dilation
@@ -123,7 +123,6 @@ def params_initializer( key, args ):
         # args.delta_dil = args.delta_dil
     else:
         args.conv_kernels = np.ones( args.n_layers ).astype(int)*args.conv_kernel
-        # args.delta_dil = 0
 
     # Initializing the weights, weight masks and time constant (alpha factors)
     w_scale = reshape_weight_scale_factor(args.w_scale, args.n_layers, args.recurrent)

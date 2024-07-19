@@ -459,9 +459,9 @@ def get_dataloader( args,
     # selecting the MTS-XOR task
     elif args.dataset_name == 'mts_xor':
         # get the Dataset
-        train_ds_split = DatasetNumpy_MTS_XOR( n_epochs=20, batch_size=args.batch_size, nb_steps=args.nb_steps, channel_size=int(args.n_in/2) )
-        val_ds_split = DatasetNumpy_MTS_XOR( n_epochs=2, batch_size=args.batch_size, nb_steps=args.nb_steps, channel_size=int(args.n_in/2) )
-        test_ds = DatasetNumpy_MTS_XOR( n_epochs=2, batch_size=args.batch_size, nb_steps=args.nb_steps, channel_size=int(args.n_in/2) )
+        train_ds_split = DatasetNumpy_MTS_XOR( n_epochs=20, batch_size=args.batch_size, nb_steps=args.nb_steps, channel_size=int(args.n_in/2), noise_rate=args.noise_rate )
+        val_ds_split = DatasetNumpy_MTS_XOR( n_epochs=2, batch_size=args.batch_size, nb_steps=args.nb_steps, channel_size=int(args.n_in/2), noise_rate=args.noise_rate )
+        test_ds = DatasetNumpy_MTS_XOR( n_epochs=2, batch_size=args.batch_size, nb_steps=args.nb_steps, channel_size=int(args.n_in/2), noise_rate=args.noise_rate )
 
         train_loader_custom_collate = DataLoader(train_ds_split, args.batch_size, shuffle=True, collate_fn=custom_collate_fn)
         val_loader_custom_collate   = DataLoader(val_ds_split,   args.batch_size, shuffle=False, collate_fn=custom_collate_fn)

@@ -65,8 +65,10 @@ if __name__ == '__main__':
         args.time_max               = 1.0 # second
         args.timestep               = args.time_max/args.nb_steps # second
         args.tau_out                = 0.05
+        args.tau_mem                = 0.3
         args.distrib_tau_sd         = 0.1
         args.batch_size             = 512
+        args.noise_rate             = 0.01
         # args.normalizer = False
 
     ### Convolution SNN for SSC/SHD taks
@@ -97,7 +99,7 @@ if __name__ == '__main__':
         args.nb_steps               = 28*28
         args.n_in                   = 1
         args.n_out                  = 10
-        args.n_hid                  = 64
+        args.n_hid                  = 128
         args.timestep               = 1/args.nb_steps # s
         args.tau_mem                = 50*args.timestep
         args.tau_out                = 200*args.timestep
