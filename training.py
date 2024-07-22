@@ -232,7 +232,7 @@ def train_hsnn(args=None, wandb_flag=True):
             if not args.train_alpha:
                 for g in range(len(grads)): grads[g][1] *= 0
             else: 
-                for g in range(len(grads)): grads[g][1] *= 1
+                for g in range(len(grads)): grads[g][1] *= .1
                 grads[-1][1] *= 0.
             # weight update
             opt_state = opt_update(epoch, grads, opt_state)

@@ -153,9 +153,9 @@ if __name__ == '__main__':
     ### MTS_XOR: delta_tau - Figure Supplementary 2
     elif parsed.sweep_name == 'MTS_XOR_noise_freq':
         print('MTS')
-        config['seed']          = {'values':[0,1,2,3,4]}
-        config['delta_tau']     = {'values':[-0.5, 0.5]}
-        config['noise_rate']    = {'values':[0.01, 0.05, 0.1, 0.15, 0.2, 0.25]}
+        config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
+        config['delta_tau']     = {'values':[0.4, -0.4]}
+        config['noise_rate']    = {'values':[0.01, 0.05, 0.1, 0.15, 0.20, 0.25]}
         config['dataset_name']  = {'value':'mts_xor'} # Task name!
         config['n_layers']      = {'value':3}
         config['n_hid']         = {'value':10}

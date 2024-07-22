@@ -76,15 +76,15 @@ if __name__ == '__main__':
         if args.convolution == True:
             args.nb_steps           = 200 # 200
             args.freq_shift         = 10
-            args.use_test_as_valid  = False # True
+            args.use_test_as_valid  = True # True
             args.hierarchy_conv     = 'kernel'
             args.conv_kernel        = 5 #5
             args.delta_ker          = 3 #3
-            args.conv_dilation      = 5 #3
+            args.conv_dilation      = 3 #3
             args.delta_dil          = 2 #2
-            args.dropout_rate       = 0.4
+            args.dropout_rate       = 0.4 # 0.4
             args.l2_lambda          = 1e-4
-            args.tau_mem            = 0.02
+            args.tau_mem            = 0.015
 
     ### MNIST taks
     elif args.dataset_name == 'mnist':
