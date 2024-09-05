@@ -1,6 +1,14 @@
-# exclude the /results folder
+# exclude the /results folder   --> here we store the results
 results/
+
+# exclude the /datasets folder  --> here we store the datasets
+datasets/
+
+# exclude the /wandb folder     --> here we store the meta-data from the WandB platform
 wandb/
+
+# exclude the /wandb folder     --> here we store the meta-data from the WandB platform
+requirements/
+
+# pycache...
 __pycache__/
-debug.py
-plotting*

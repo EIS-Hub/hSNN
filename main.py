@@ -10,7 +10,7 @@ from utils_normalization import BatchNorm, LayerNorm
 from utils_initialization import SimArgs, params_initializer
 from training import train_hsnn
 
-os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".75" # needed because network is huge
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".5" # needed because network is huge
 os.environ["CUDA_VISIBLE_DEVICES"]="2"
 jax.devices()
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_name', type=str, default='shd')
     parser.add_argument('--save_dir_name', type=str, default=None)
     parsed = parser.parse_args()
-    print(parsed)
+    # print(parsed)
     args = SimArgs(
                  n_in = parsed.n_in, n_hid = parsed.n_hid, n_layers = parsed.n_layers,
                  seed = parsed.seed, normalizer = parsed.normalizer, decoder = parsed.decoder, 
@@ -99,13 +99,13 @@ if __name__ == '__main__':
         args.nb_steps               = 28*28
         args.n_in                   = 1
         args.n_out                  = 10
-        args.n_hid                  = 128
+        args.n_hid                  = 64
         args.timestep               = 1/args.nb_steps # s
         args.tau_mem                = 50*args.timestep
         args.tau_out                = 200*args.timestep
         args.dropout                = 0.1
         args.lr                     = 0.01
-        args.batch_size             = 256
+        args.batch_size             = 32
         args.hierarchy_conv         = 'kernel'
         args.conv_kernel            = 3 #5
         args.delta_ker              = 0 #3

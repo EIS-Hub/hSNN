@@ -77,7 +77,7 @@ def get_numpy_datasets(subkey_perturbation, pert_proba, n_inp, cache_dir, nb_ste
                                     truncation=truncation, freq_shift=freq_shift) 
         _test_ds  = DatasetNumpy(test_file['spikes'],
                                     test_file['labels'],
-                                    name=dataset_name, target_dim=n_inp, nb_rep=1, ################################################ nb_rep
+                                    name=dataset_name, target_dim=n_inp, nb_rep=1,
                                     nb_steps=nb_steps, truncation=truncation) 
         if dataset_name == 'ssc':
             valid_file = h5py.File(os.path.join(cache_dir, cache_subdir,
@@ -132,23 +132,6 @@ class DatasetNumpy(torch.utils.data.Dataset):
         # Reducing the dimention of the input
         if target_dim != 700:
             self.reduce_inp_dimensions(target_dim=target_dim, axis=2, nb_rep=nb_rep)
-
-        # perform trunctation (not used in this code)
-        if truncation and verbose:
-            self.input = self.input[:, :150,:]
-            print(f'TRUNCATION: ON')
-            print(f'nb_step after truncation: {self.input.shape[1]} (DatasetNumpyModified.__init__)')
-        elif verbose: 
-            print(f'TRUNCATION: OFF')
-
-        # Introduce noise in form of added spikes (not used in this code)
-        if pert_proba != None:
-            perturbation = jax.random.bernoulli(subkey_perturbation, p=pert_proba, shape=self.input.shape)
-            perturbation = jnp.logical_or(self.input, perturbation).astype(jnp.uint8)
-            self.input = jnp.concatenate([self.input, perturbation], axis=0, dtype=jnp.uint8)
-            self.output = jnp.tile(self.output, reps=2)
-            if verbose: print(f'self.input after perturbation: {self.input.shape} (DatasetNumpyModified.__init__)')
-        self.num_samples = self.input.shape[0]
 
     def __len__(self):
         return self.num_samples
@@ -269,8 +252,8 @@ def get_file(fname,
         except (Exception, KeyboardInterrupt) as e:
             if os.path.exists(fpath):
                 os.remove(fpath)
-
     return fpath
+
 
 def validate_file(fpath, file_hash, algorithm='auto', chunk_size=65535):
     if (algorithm == 'sha256') or \
@@ -296,6 +279,7 @@ def _hash_file(fpath, algorithm='sha256', chunk_size=65535):
             hasher.update(chunk)
 
     return hasher.hexdigest()
+
 
 def custom_collate_fn(batch): 
   transposed_data = list(zip(*batch))
@@ -376,6 +360,7 @@ class DatasetNumpy_MTS_XOR(torch.utils.data.Dataset):
     def __data_generation(self, idx):
         return self.input[idx], self.output[idx]
     
+# This is a function to convert the static MNIST images into spike times
 def current2firing_time(x, tau=20, thr=0.2, tmax=1.0, epsilon=1e-7):
     """ Computes first firing time latency for a current input x assuming the charge time of a current based LIF neuron.
 
@@ -413,9 +398,8 @@ def expand_time_dim( data, nb_steps=100 ):
     return  data_time
 
 def get_dataloader( args, 
-                    cache_dir='/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD',
-                    # cache_dir='/home/ttorchet/data',
-                    download=False,
+                    cache_dir=os.path.join( os.getcwd(), 'datasets' ),
+                    download=True,
                     verbose=False):
     # Set random seeds for reproducibility
     torch.manual_seed(args.seed)
@@ -424,12 +408,6 @@ def get_dataloader( args,
 
     # selecting KeyWord Spotting tasks
     if args.dataset_name in ['shd', 'ssc']:
-        # cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD' # take data from tristan, to avoid copies #os.getcwd()
-        if os.getcwd() == '/home/filippo/hsnn':
-            cache_dir = '/home/filippo/data'
-        elif os.getcwd() == '/Users/filippomoro/Documents/hsnn':
-            cache_dir = '/Users/filippomoro/Desktop/KINGSTONE/Datasets/SHD'
-        else: cache_dir = cache_dir
         key = jax.random.PRNGKey(args.seed)
         key, subkey_perturbation = jax.random.split(key)
         train_ds, test_ds = get_numpy_datasets(subkey_perturbation, args.pert_proba, args.n_in, 
@@ -468,13 +446,10 @@ def get_dataloader( args,
         test_loader_custom_collate  = DataLoader(test_ds,        args.batch_size, shuffle=None, collate_fn=custom_collate_fn)
         return train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate
     
-    # selecting the MNIST task
+    # selecting the (original) MNIST task
     elif args.dataset_name == 'mnist':
-        # get the dataset
-        if os.getcwd() == '/home/filippo/hsnn':
-            root = '/home/filippo/data/audiospikes'
-        elif os.getcwd() == '/Users/filippomoro/Documents/hsnn':
-            root = '/Users/filippomoro/Documents/datasets'
+        root = os.path.join( os.getcwd(), 'datasets' )
+        os.makedirs( root, exist_ok=True)
         train_dataset = torchvision.datasets.MNIST(root, train=True, transform=None, target_transform=None, download=True)
         test_dataset = torchvision.datasets.MNIST(root, train=False, transform=None, target_transform=None, download=True)
         
@@ -493,13 +468,10 @@ def get_dataloader( args,
         test_loader_custom_collate  = DataLoader(test_dataset,   args.batch_size, shuffle=None, collate_fn=custom_collate_fn)
         return train_loader_custom_collate, val_loader_custom_collate, test_loader_custom_collate
 
+    # selecting the (sequential) MNIST task
     elif args.dataset_name in ['s-mnist', 'ps-mnist']:
-        # get the dataset
-        if os.getcwd() == '/home/filippo/hsnn':
-            root = '/home/filippo/data/audiospikes'
-        elif os.getcwd() == '/Users/filippomoro/Documents/hsnn':
-            root = '/Users/filippomoro/Documents/datasets'
-
+        root = os.path.join( os.getcwd(), 'datasets' )
+        os.makedirs( root, exist_ok=True)
         if args.dataset_name == 's-mnist':
             transform = torchvision.transforms.Compose(
              [torchvision.transforms.ToTensor(),

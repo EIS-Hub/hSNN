@@ -14,7 +14,6 @@ os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".9" # needed because network is hu
 os.environ["CUDA_VISIBLE_DEVICES"]="2"
 jax.devices()
 
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -48,8 +47,8 @@ if __name__ == '__main__':
     ############# SHD #############
     ###############################
 
-    ### Hierarchy shape - Figure 2e
-    if parsed.sweep_name == 'Hierarchy_shape_SHD':
+    ### Hierarchy shape - Supplementary Figure S2e
+    if parsed.sweep_name == 'hSNN_Figure_S2e':
         print('Starting with the sweep on Hierarchy function')
         config['tanh_coef'] = {'values':[0.1, 0.25, 0.5, 1.]}
         config['tanh_center'] = {'values':[0, 0.25, 0.5, 0.75, 1]}
@@ -64,8 +63,8 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
         
-    ### SHD Delta Tau Hiararchy - Figure 2 supplementary
-    elif parsed.sweep_name == 'SHD_Delta_tau':
+    ### SHD Delta Tau Hiararchy - Supplementary Figure S2c
+    elif parsed.sweep_name == 'hSNN_Figure_S2c':
         print('Starting with the sweep on Delta Tau (hierarchy)')
         config['delta_tau'] = {'values':[-0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15, 0.18]}
         config['seed'] = {'values':[0, 1, 2, 3, 4, 5, 6, 7, 8, 9] }
@@ -79,21 +78,19 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
-    ### SHD tau mem tuning - supplementary (Tau_mem_train_alpha_False)
-    elif parsed.sweep_name == 'Tau_mem_train_alpha_False':
+    ### SHD tau mem tuning - Supplementary Figure S2b
+    elif parsed.sweep_name == 'hSNN_Figure_S2b':
         print('Starting with the sweep on the Time Constant')
-        config['tau_mem'] = {'values':[0.01, 0.05, 0.1, 0.2, 0.4]} # [0.01, 0.05, 0.1, 0.2, 0.4]
-        config['seed'] = {'values':[0,1,2]} # [0, 1, 2]
-        # config['distrib_tau'] = {'values':[True, False]}
+        config['tau_mem'] = {'values':[0.05, 0.1, 0.2, 0.3]}
+        config['seed'] = {'values':[0,1,2,3,4,5]}
         config['distrib_tau'] = {'value':True}
-        # config['recurrent'] = {'value':True} ### ----> be careful here!
         config['n_epochs'] = {'value':60}
         config['n_layers'] = {'value':4}
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
-    ### SHD number of layers with and without Hierarchy - Figure 2f
-    elif parsed.sweep_name == 'SHD_Num_layers':
+    ### SHD number of layers with and without Hierarchy - Figure 2c
+    elif parsed.sweep_name == 'hSNN_Figure_2c':
         print('Starting with the sweep on the Time Constant')
         config['n_layers'] = {'values':[3,4,5,6]}
         config['n_hid'] = {'values':[32,64,128]}
@@ -109,8 +106,8 @@ if __name__ == '__main__':
     ########### MTS-XOR ###########
     ###############################
 
-    ### MTS_XOR: tau_mem - Figure 2b
-    elif parsed.sweep_name == 'MTS_XOR_tau_mem':
+    ### MTS_XOR: tau_mem - Figure 2a
+    elif parsed.sweep_name == 'hSNN_Figure_2a':
         print('Starting with the sweep on the Time Constant')
         config['n_layers']      = {'values':[3,4]}
         config['seed']          = {'values':[0,1,2,3,4]}
@@ -129,8 +126,8 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
-    ### MTS_XOR: delta_tau - Figure 2c
-    elif parsed.sweep_name == 'MTS_XOR_delta_tau':
+    ### MTS_XOR: delta_tau - Figure 2b
+    elif parsed.sweep_name == 'hSNN_Figure_2b':
         print('Starting with the sweep on the Delta_Tau (Hierarchy)')
         config['n_layers']      = {'values':[3,4]}
         config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
@@ -150,8 +147,8 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
-    ### MTS_XOR: delta_tau - Figure Supplementary 2
-    elif parsed.sweep_name == 'MTS_XOR_noise_freq':
+    ### MTS_XOR: delta_tau - Supplementary Figure S2
+    elif parsed.sweep_name == 'hSNN_Figure_S2a':
         print('MTS')
         config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
         config['delta_tau']     = {'values':[0.4, -0.4]}
@@ -176,11 +173,11 @@ if __name__ == '__main__':
     ###### Convolutional SNN ######
     ###############################
 
-    ### SHD SCNNL: dilation tuning
-    elif parsed.sweep_name == 'SHD_SCNN_dilation_tuning':
+    ### SHD SCNNL: dilation tuning, Supplementary Figure S4
+    elif parsed.sweep_name == 'hSNN_Figure_S4a':
         print('SHD, SCNN, tuning of the dilation started')
         config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
-        config['conv_dilation'] = {'values':[3,5,7,12,24]}
+        config['conv_dilation'] = {'values':[3,5,12,24]}
         config['convolution']   = {'value':True}
         config['hierarchy_conv']= {'value':False}
         config['conv_kernel']   = {'value':5} # we initially fix the kernel size to 5
@@ -197,8 +194,8 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
-    ### SHD SCNNL: kernel size tuning
-    elif parsed.sweep_name == 'SHD_SCNN_kernel_tuning':
+    ### SHD SCNNL: kernel size tuning, Supplementary Figure S4
+    elif parsed.sweep_name == 'hSNN_Figure_S4b':
         print('SHD, SCNN, tuning of the kernel sizes started')
         config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
         config['conv_kernel']   = {'values':[3,5,7,9]}
@@ -217,8 +214,8 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
-    ### SHD SCNNL: kernel Hierarchy
-    elif parsed.sweep_name == 'SHD_SCNN_kernel_Hierarchy':
+    ### SHD SCNNL: kernel Hierarchy, Figure 4b
+    elif parsed.sweep_name == 'hSNN_Figure_4b':
         print('SHD, SCNN, Hierarchy of kernel sizes')
         config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]} #{'values':[0,1,2,3,4]}
         config['delta_ker']     = {'values':[-4,-3,-2,-1,0,1,2,3,4]}
@@ -238,8 +235,8 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
-    ### SHD SCNNL: dilation Hierarchy
-    elif parsed.sweep_name == 'SHD_SCNN_dilation_Hierarchy':
+    ### SHD SCNNL: dilation Hierarchy, Figure 4d
+    elif parsed.sweep_name == 'hSNN_Figure_4d':
         print('SHD, SCNN, Hierarchy of kernel sizes')
         config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
         config['delta_dil']     = {'values':[-3,-2,-1,0,1,2,3]}
@@ -259,8 +256,8 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
-    ### SHD SCNNL: max performance
-    elif parsed.sweep_name == 'SHD_SCNN_max_performance':
+    ### SHD SCNNL: max performance, Table 1
+    elif parsed.sweep_name == 'SHD_hCSNN_max_performance':
         print('SHD, SCNN, Hierarchy of kernel sizes')
         config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
         config['use_test_as_valid'] = {'values':[True]}
@@ -283,9 +280,9 @@ if __name__ == '__main__':
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
     ### SSC SCNN: max performance -- Table 2
-    elif parsed.sweep_name == 'SSC_SCNN_max_performance':
+    elif parsed.sweep_name == 'SSC_hCSNN_max_performance':
         print('SSC, SCNN, max performance')
-        config['seed']          = {'values':[0,1,2,3,4]}
+        config['seed']          = {'values':[0,1,2,3,4,5,6,7,8,9]}
         config['use_test_as_valid'] = {'value':False}
         config['convolution']   = {'value':True}
         config['dataset_name']  = {'value':'ssc'}
@@ -306,8 +303,8 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
-    ### SSC SNN: Hierarchy vs Homogeneity -- Table 2
-    elif parsed.sweep_name == 'SSC_SNN_hierarchy':
+    ### SSC SNN: -- Table 2
+    elif parsed.sweep_name == 'SSC_hSNN_hierarchy':
         print('SSC, SNN, Hierarchy vs Homogeneity')
         config['seed']          = {'values':[0,1,2,3,4]}
         config['delta_tau']      = {'values':[0.15, 0]}
@@ -327,7 +324,8 @@ if __name__ == '__main__':
     ######  Static datasets  ######
     ###############################
 
-    elif parsed.sweep_name == 'MNIST_tau_mem':
+    ### MNIST: static data, Supplementary Figure 5b
+    elif parsed.sweep_name == 'hSNN_Figure_5b':
         print('Starting with the sweep on the Time Constant')
         config['seed']          = {'values':[0,1,2,3,4]}
         config['tau_mem']       = {'values':[0.02, 0.05, 0.1, 0.2, 0.5]}
@@ -350,7 +348,8 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
-    elif parsed.sweep_name == 'MNIST_delta_tau':
+    ### MNIST: static data, Supplementary Figure 5c
+    elif parsed.sweep_name == 'hSNN_Figure_5c':
         print('Starting with the sweep on the Time Constant')
         config['seed']          = {'values':[0,1,2,3,4]}
         config['delta_tau']     = {'values':[-0.4, -0.2, 0, 0.2, 0.4]}
@@ -374,12 +373,14 @@ if __name__ == '__main__':
         sweep_config['parameters'] = config
         sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
 
-    elif parsed.sweep_name == 'sMNIST_delta_tau':
+    ### MNIST: sequential data, Supplementary Figure 6b and 6c
+    elif parsed.sweep_name == 'hSNN_Figure_6':
         print('Delta tau for the sequential MNIST task')
         nb_steps = 28*28
         timestep = 1/nb_steps
         config['seed']          = {'values':[0,1,2,3,4]}
         config['delta_tau']     = {'values':[-80*timestep, -40*timestep, 0, 40*timestep, 80*timestep]}
+        config['recurrent']     = {'values':[False, True]}
         config['hierarchy_tau'] = {'value':'linear'}
         config['dataset_name']  = {'value':'s-mnist'} # Task name!
         config['n_epochs']      = {'value':40}
@@ -387,33 +388,6 @@ if __name__ == '__main__':
         config['n_layers']      = {'value':4}
         config['n_in']          = {'value':1}
         config['n_out']         = {'value':10}
-        config['recurrent']     = {'value':True} # False!!!!
-        config['distrib_tau']   = {'value':'normal'}
-        config['nb_steps']      = {'value':nb_steps}
-        config['time_max']      = {'value':1.0}
-        config['timestep']      = {'value':1./nb_steps}
-        config['tau_out']       = {'value':200*timestep}
-        config['tau_mem']       = {'value':50*timestep}
-        config['batch_size']    = {'value':256}
-        config['experiment_name'] = {'value':parsed.sweep_name}
-        sweep_config['parameters'] = config
-        sweep_id = wandb.sweep(sweep_config, project="hsnn_"+parsed.sweep_name)
-
-    # permuted sequential MNIST
-    elif parsed.sweep_name == 'psMNIST_delta_tau':
-        print('Delta tau for the permuted sequential MNIST task')
-        nb_steps = 28*28
-        timestep = 1/nb_steps
-        config['seed']          = {'values':[0,1,2,3,4]}
-        config['delta_tau']     = {'values':[0, 80*timestep]}
-        config['hierarchy_tau'] = {'value':'linear'}
-        config['dataset_name']  = {'value':'ps-mnist'}
-        config['n_epochs']      = {'value':60}
-        config['n_hid']         = {'value':64}
-        config['n_layers']      = {'value':4}
-        config['n_in']          = {'value':1}
-        config['n_out']         = {'value':10}
-        config['recurrent']     = {'value':True} # False!!!!
         config['distrib_tau']   = {'value':'normal'}
         config['nb_steps']      = {'value':nb_steps}
         config['time_max']      = {'value':1.0}

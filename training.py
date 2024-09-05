@@ -207,7 +207,7 @@ def train_hsnn(args=None, wandb_flag=True):
     else: pw_lr = optimizers.piecewise_constant([args.n_epochs], [args.lr, args.lr*np.clip( args.lr_decay, 1e-5, 1 )])
     # define the optimizer
     opt_init, opt_update, get_params = optimizers.adam(step_size=pw_lr)
-    # opt_init, opt_update, get_params = optimizers.sgd(step_size=pw_lr)
+    # opt_init, opt_update, get_params = optimizers.sgd(step_size=pw_lr)  ### TOBEREMOVED
     # initialize the parameters (and states)
     net_params, net_states = params_initializer( key_model, args )
     opt_state = opt_init(net_params)
