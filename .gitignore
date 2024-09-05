@@ -7,8 +7,5 @@ datasets/
 # exclude the /wandb folder     --> here we store the meta-data from the WandB platform
 wandb/
 
-# exclude the /wandb folder     --> here we store the meta-data from the WandB platform
-requirements/
-
 # pycache...
 __pycache__/
