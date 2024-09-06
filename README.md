@@ -1,6 +1,6 @@
 # Welcome to hSNN
 
-This is the repository for [Temporal Hierarchy in Spiking Neural Networks]( https://arxiv.org/abs/2407.18838 ).
+This is the repository for *Temporal Hierarchy in Spiking Neural Networks*.
 
 ## Repo Content
 
