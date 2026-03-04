@@ -8,6 +8,8 @@ from functools import partial
 from utils_initialization import args
 from utils_normalization import LayerNorm, BatchNorm
 
+hidden_size = None
+
 ### Noise function
 @jax.custom_jvp
 def add_noise(w, key, noise_std):
@@ -66,6 +68,29 @@ def lif_step( args_in, input_spikes ):
     out_spikes = spiking_fn( V_mem, v_thr )
     
     return [ [w, alpha], [w_mask, tau, V_mem, out_spikes, v_thr, noise_sd] ], out_spikes
+
+def mingru_step( args_in, input_spikes ):
+    ''' Forward function for the MinGru model, adopted here for the hidden layers. '''
+    # global hidden_size
+    # print(hidden_size)
+    net_params, net_states = args_in
+    # state: the parameters (weights) and the state of the neurons (spikes, inputs and membrane, ecc..)
+    w, alpha = net_params; w_mask, z, h, out_spikes, v_thr, noise_sd = net_states
+    # clip alpha
+    # tau --> z
+    # Vmem --> h_t
+    # w_z, w_ht = w
+    # h_tilde = jnp.matmul(input_spikes, w_ht)
+    # z       = jax.nn.sigmoid( jnp.matmul(input_spikes, w_z) )
+    z, h_tilde = input_spikes[:hidden_size], input_spikes[hidden_size:] 
+    # z, h_tilde = input_spikes
+    # print('hello')
+    # jax.debug.print("🤯 h --> {h} 🤯", h=h)
+    # jax.debug.print("🤯 h~ --> {h_tilde} 🤯", h_tilde=h_tilde)
+    # jax.debug.print("🤯 z --> {z} 🤯", z=z)
+    h = (1-z) * h + z* h_tilde
+    
+    return [ [w, alpha], [w_mask, z, h, out_spikes, v_thr, noise_sd] ], h
 
 
 # Leaky Integrate and Fire layer, Recurrent

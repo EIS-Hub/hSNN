@@ -40,6 +40,7 @@ class SimArgs:
         # network
         self.decoder        = decoder # output decoding strategy
         self.recurrent      = recurrent # enables recurrent connections
+        self.mingru         = False # enables the minGRU layer
         self.convolution    = convolution
         self.conv_kernel    = 5 #[5,5,5,8]  #[5]*self.n_layers
         self.conv_dilation  = 5 #[4]*self.n_layers
@@ -171,6 +172,13 @@ def params_initializer( key, args ):
             weight_rec_l = jax.random.uniform(key_hid[l], [n_post, n_post], minval=-w_scale[l][1], maxval=w_scale[l][1])
             # weight_rec_l = jax.random.normal(key_hid[l], [n_post, n_post]) * w_scale[l][1]
             weight_l = [weight_l, weight_rec_l]
+            weight_mask__rec_l = 1 # jax.random.uniform(key_hid[l], [n_post, n_post]) < (1/args.n_layers)
+            weight_mask_l = [weight_mask_l, weight_mask__rec_l]
+        if args.mingru:
+            key_z, key_h = jax.random.split(key_hid[l], num=2)
+            weight_z = jax.random.uniform(key_z, [n_pre, n_post], minval=-w_scale_ff, maxval=w_scale_ff)
+            weight_h = jax.random.uniform(key_h, [n_pre, n_post], minval=-w_scale_ff, maxval=w_scale_ff)
+            weight_l = [weight_z, weight_h]
             weight_mask__rec_l = 1 # jax.random.uniform(key_hid[l], [n_post, n_post]) < (1/args.n_layers)
             weight_mask_l = [weight_mask_l, weight_mask__rec_l]
         if args.normalizer in ['batch', 'layer']:

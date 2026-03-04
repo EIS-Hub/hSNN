@@ -470,7 +470,8 @@ def get_dataloader( args,
 
     # selecting the (sequential) MNIST task
     elif args.dataset_name in ['s-mnist', 'ps-mnist']:
-        root = os.path.join( os.getcwd(), 'datasets' )
+        # root = os.path.join( os.getcwd(), 'datasets' )
+        root = '/Users/filippomoro/Documents/datasets'
         os.makedirs( root, exist_ok=True)
         if args.dataset_name == 's-mnist':
             transform = torchvision.transforms.Compose(

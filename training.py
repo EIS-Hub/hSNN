@@ -1,5 +1,6 @@
 import os
 import jax
+# jax.config.update( 'jax_debug_nans', True )
 import time
 import wandb
 import pickle
@@ -14,7 +15,8 @@ from jax.example_libraries import optimizers
 from utils_dataset import get_dataloader, frequency_shift
 from utils_initialization import params_initializer
 from utils_normalization import LayerNorm, BatchNorm
-from models import lif_step, rlif_step, li_step, dropout, Conv1D_causal
+from models import lif_step, rlif_step, li_step, dropout, Conv1D_causal, mingru_step
+import models
 from models import decoder_cum, decoder_freq, decoder_sum, decoder_vlast, decoder_vmax, decoder_vmem_time
 
 
@@ -48,6 +50,8 @@ def train_hsnn(args=None, wandb_flag=True):
         return args_out_layer, out_spikes_layer
     vscan_layer_out = vmap( scan_out_layer, in_axes=(None, 0))
 
+    # reset the hidden state size for GRU
+    models.hidden_size = args.n_hid
     # the following function implements the main network
     @partial(jax.jit, static_argnames=['dilation', 'dilation_delta'])
     def hsnn( args_in, input_spikes, dilation=5, dilation_delta=0 ):
@@ -66,12 +70,25 @@ def train_hsnn(args=None, wandb_flag=True):
             if len(w) == 3: # it means that we'll do normalization
                 weight, scale, bias = w
             else: weight = w
-            if len(weight) ==2: weight, _ = weight
+            if len(weight) == 2 and (l+1 != n_layers): # it means we are either recurrent or minGRU
+                w_z, w_h = weight
+                I_in_z = jax.nn.sigmoid( jnp.matmul(layer_input_spike, w_z) )
+                I_in_h = jnp.matmul(layer_input_spike, w_h)
+                I_in = jnp.concatenate( [I_in_z, I_in_h], axis=2 )
+            else: 
+                I_in = jnp.matmul(layer_input_spike, weight[0])
             # Multiplying the weights by the spikes
-            if len( weight.shape ) == 3 and l!=(n_layers-1): 
-                dilation_layer = int( np.clip(dilation + ((n_layers-2)**-1)*(l-(n_layers-2)/2)*dilation_delta, 0, None ) )
-                I_in = Conv1D_causal(layer_input_spike, weight, dilation=dilation_layer) #(l+1)*5 dilation_lay[l]
-            else: I_in = jnp.matmul(layer_input_spike, weight)
+
+            ### FOLLOWING IS FOR CONVOLUTION
+            # if len( weight.shape ) == 3 and l!=(n_layers-1): 
+            #     dilation_layer = int( np.clip(dilation + ((n_layers-2)**-1)*(l-(n_layers-2)/2)*dilation_delta, 0, None ) )
+            #     I_in = Conv1D_causal(layer_input_spike, weight, dilation=dilation_layer) #(l+1)*5 dilation_lay[l]
+            # else: I_in = jnp.matmul(layer_input_spike, weight)
+
+            # weigh_z, weight_htilde = weight
+            # I_in_z    = jnp.matmul(layer_input_spike, weigh_z)
+            # I_in_tile = jnp.matmul(layer_input_spike, weight_htilde)
+            # I_in = [I_in]
 
             # Normalization (if selected)
             if len(w) == 3: # it means that we'll do normalization
@@ -83,11 +100,17 @@ def train_hsnn(args=None, wandb_flag=True):
             if l+1 == n_layers:
                 _, out_spikes_layer = vscan_layer_out( args_in_layer, I_in )
             else: 
-                _, out_spikes_layer = vscan_layer( args_in_layer, I_in )
+                args_in_layer, out_spikes_layer = vscan_layer( args_in_layer, I_in )
+                
+                # jax.debug.print("🤯 {out_spikes_layer} 🤯", out_spikes_layer=out_spikes_layer)
+                # if jnp.isnan(out_spikes_layer).any():
+                #     break
+                # print(out_spikes_layer.shape)
                 # Dropout
                 key, key_dropout = jax.random.split(key, 2)
                 out_spikes_layer = dropout( key_dropout, out_spikes_layer, rate=dropout_rate, deterministic=False )
             out_spike_net.append(out_spikes_layer)
+            # print( out_spike_net )
         return out_spikes_layer, out_spike_net
     
     # selecting the right decoder
@@ -111,6 +134,8 @@ def train_hsnn(args=None, wandb_flag=True):
     # network architecture
     if args.recurrent:
         layer = rlif_step
+    elif args.mingru:
+        layer = mingru_step
     else: 
         layer = lif_step
     if args.decoder == 'freq':
@@ -141,19 +166,21 @@ def train_hsnn(args=None, wandb_flag=True):
         output_layer, out_spike_net = hsnn( args_in, X, dilation, dilation_delta )
         Yhat = decoder( output_layer )
         # compute the loss and correct examples
+        # print( Yhat.shape, Y.shape )
+        # print( output_layer )
         num_correct = jnp.sum(jnp.equal(jnp.argmax(Yhat, -1), jnp.argmax(Y, -1)))
         # cross entropy loss
         loss_ce = -jnp.mean( jnp.sum(Y * jnp.log(Yhat+1e-12), axis=-1) )
         # L2 norm
         loss_l2 = optimizers.l2_norm( [net_params[l][0] for l in range(len(net_params))] ) * args.l2_lambda
         # firing rate loss
-        avg_spikes_neuron = jnp.mean( jnp.stack( [ jnp.mean( jnp.sum( out_spike_net[l], axis=1 ), axis=(0,-1) ) for l in range( len(net_params)-1 )] ) )
-        loss_fr = args.freq_lambda * (args.target_fr - avg_spikes_neuron)**2
+        # avg_spikes_neuron = jnp.mean( jnp.stack( [ jnp.mean( jnp.sum( out_spike_net[l], axis=1 ), axis=(0,-1) ) for l in range( len(net_params)-1 )] ) )
+        # loss_fr = args.freq_lambda * (args.target_fr - avg_spikes_neuron)**2
         # loss on the decaying factor
-        loss_alpha = optimizers.l2_norm( [jax.nn.relu(net_params[l][1]-1.+5e-2) for l in range(len(net_params))] ) * 1e-1
-        loss_alpha_sd = optimizers.l2_norm( [(net_params[l][1]-jnp.mean(net_params[l][1])) for l in range(len(net_params))] ) * args.l2_alpha_sd
+        # loss_alpha = optimizers.l2_norm( [jax.nn.relu(net_params[l][1]-1.+5e-2) for l in range(len(net_params))] ) * 1e-1
+        # loss_alpha_sd = optimizers.l2_norm( [(net_params[l][1]-jnp.mean(net_params[l][1])) for l in range(len(net_params))] ) * args.l2_alpha_sd
         # Total loss
-        loss_total = loss_ce + loss_l2 + loss_fr + loss_alpha + loss_alpha_sd
+        loss_total = loss_ce + loss_l2 #+ loss_fr + loss_alpha + loss_alpha_sd
         loss_values = [num_correct, loss_ce]
         return loss_total, loss_values
  
